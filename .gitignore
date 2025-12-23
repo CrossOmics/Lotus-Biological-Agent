@@ -1,0 +1,73 @@
+# Scanpy outfiles
+/write/
+
+# Docs
+# /docs/  # Documentation should be tracked
+
+# tests
+/*cache/
+/tests/
+
+# write
+/write/
+
+# scripts
+/scripts/
+
+# figures
+/figures/
+
+# Environment management
+/Pipfile
+/Pipfile.lock
+/requirements*.lock
+
+# always-ignore extensions
+*~
+
+# Python build files
+__pycache__/
+/ci/lotus-low-vers.txt
+/dist/
+/*-env/
+/env-*/
+/environment.yml
+/.pytest_cache/
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python package metadata
+*.egg-info/
+.egg-info/
+
+# OS stuff
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
+.directory
+
+# IDEs and editors
+/.idea/
+
+# asv benchmark files
+/benchmarks/.asv
+/benchmarks/data/
+
+#docstring
+docstrings_paraphrased.jsonl
+docstrings_to_paraphrase.jsonl
+
+#result
+/result_*/
+
+# commit message
+commit*.md
+COMMIT*.md
+GIT*.txt
+GIT*.md
+commit*.txt
+COMMIT*.txt
