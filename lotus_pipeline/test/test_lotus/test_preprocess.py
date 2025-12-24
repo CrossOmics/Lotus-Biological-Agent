@@ -1,7 +1,5 @@
 import sys
-import unittest
 import numpy as np
-import pandas as pd
 from pathlib import Path
 from anndata import AnnData
 
@@ -10,7 +8,6 @@ import lotus_pipeline.lotus.preprocessing as pp
 project_root = Path(__file__).resolve().parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-
 
 def test_run_preprocessing_mock_data():
     """
