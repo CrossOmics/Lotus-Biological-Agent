@@ -21,7 +21,6 @@ def corespect(
         # --- Run Parameters ---
         fine_grained: bool = True,
         propagate: bool = True,
-        # --- Standard Parameters ---
         copy: bool = False,
 ) -> AnnData | None:
     """
@@ -41,15 +40,22 @@ def corespect(
         resolution: Resolution for clustering with Leiden inside CoreSpect.
         fine_grained: Whether to run the fine-grained core refinement step.
         propagate: Whether to propagate labels from cores to all cells.
-        copy: Whether to copy adata or modify it inplace.
+        copy: Whether to return a copy of the AnnData object or modify it in-place.
 
     Returns:
-        Returns None if copy=False, else returns an AnnData object.
-        Updates adata with:
+        If copy=True: Returns a new AnnData object with the results.
+        If copy=False: Returns None and updates the input `adata` in-place.
+
+        Updates:
             - adata.obs[key_added]: The cluster labels.
             - adata.obs[key_added + '_is_core']: Boolean indicating if a cell belongs to the stable core.
             - adata.uns[key_added]: Dictionary containing parameters and layer info.
     """
+
+    # 0. Handle In-Place vs Copy Mode
+    # If copy=True: Create a deep copy of the input AnnData object.
+    # This ensures the original object remains unchanged. We will perform
+    # the analysis on this new instance and return it at the end.
     if copy:
         adata = adata.copy()
 
@@ -74,10 +80,12 @@ def corespect(
     # unpack() unpacks the config into separate sub-configs (flowrank_cfg, etc.)
     model = CorespectModel(X, **cfg.unpack())
 
-    # Run the cplearn core analysis logic
+    # Run the core logic to perform clustering and core identification
     model.run(fine_grained=fine_grained, propagate=propagate)
 
-    # 4. Write Results back to AnnData (In-place modification)
+    # 4. Write Results back to AnnData
+    # Note: 'adata' here refers to either the deep copy (if copy=True)
+    # or the original reference (if copy=False).
 
     # A. Write Cluster Labels
     # Convert to categorical string for consistent plotting compatibility
@@ -108,4 +116,7 @@ def corespect(
         'layers_indices': model.layers_
     }
 
+    # 5. Return Logic
+    # If copy=True: Return the modified new instance.
+    # If copy=False: Return None (standard Scanpy in-place behavior).
     return adata if copy else None

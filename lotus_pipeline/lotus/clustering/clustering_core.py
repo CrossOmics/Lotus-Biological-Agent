@@ -4,6 +4,8 @@ import scanpy as sc
 from anndata import AnnData
 from scipy.sparse import csr_matrix, csc_matrix
 
+from ..core_analysis import corespect
+
 
 def leiden(
         adata: AnnData,
@@ -128,5 +130,56 @@ def louvain(
         copy=copy
     )
 
-def corespect_clustering():
 
+def corespect_clustering(
+        adata: AnnData,
+        *,
+        key_added: str = "corespect",
+        force_recalc: bool = False,
+        copy: bool = False,
+        **kwargs,
+) -> AnnData | None:
+    """
+    Execute CoreSpect clustering with a cache check.
+
+    Checks if CoreSpect analysis has already been performed. If results exist,
+    returns immediately to save time. Otherwise, runs the analysis.
+
+    Parameters:
+        adata: The annotated data matrix.
+        key_added: The key in `adata.obs` where results should be stored.
+                   Default is 'corespect'.
+        force_recalc: If True, ignore existing results and re-run the analysis.
+        copy: Whether to return a copy of the AnnData object.
+        **kwargs: Additional arguments passed to the `corespect` function
+                  (e.g., q, r, resolution, use_rep).
+
+    Returns:
+        AnnData object if copy=True, else None (modifies in-place).
+    """
+    if copy:
+        adata = adata.copy()
+
+    # 1. Checks if CoreSpect analysis has already been performed.
+    has_labels = key_added in adata.obs
+    has_metadata = key_added in adata.uns
+
+    if has_labels and has_metadata and not force_recalc:
+        print(f"Info: CoreSpect results found in `adata.obs['{key_added}']`. "
+              "Skipping recalculation. Use `force_recalc=True` to override.")
+        return adata if copy else None
+
+    # 2. If it has not been run before, or if it is forced to be recalculated ->
+    # the core algorithm will be called again
+    if force_recalc:
+        print(f"Info: Force recalculation enabled. Re-running CoreSpect...")
+
+    # invoke corespect wrapper to process the data
+    corespect(
+        adata,
+        key_added=key_added,
+        copy=True,
+        **kwargs
+    )
+
+    return adata if copy else None
