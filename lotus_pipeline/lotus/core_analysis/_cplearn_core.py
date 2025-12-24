@@ -22,7 +22,7 @@ def corespect(
         fine_grained: bool = True,
         propagate: bool = True,
         copy: bool = False,
-) -> AnnData | None:
+) -> (AnnData, CorespectModel) | None:
     """
     Cluster cells using the CoreSpect algorithm.
 
@@ -117,6 +117,5 @@ def corespect(
     }
 
     # 5. Return Logic
-    # If copy=True: Return the modified new instance.
-    # If copy=False: Return None (standard Scanpy in-place behavior).
-    return adata if copy else None
+    # If copy=True: Return the modified annadata and corespect model
+    return adata, model

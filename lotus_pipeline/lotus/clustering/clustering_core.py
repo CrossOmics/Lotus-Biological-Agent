@@ -5,6 +5,7 @@ from anndata import AnnData
 from scipy.sparse import csr_matrix, csc_matrix
 
 from ..core_analysis import corespect
+from cplearn.corespect import CorespectModel
 
 
 def leiden(
@@ -138,7 +139,7 @@ def corespect_clustering(
         force_recalc: bool = False,
         copy: bool = False,
         **kwargs,
-) -> AnnData | None:
+) -> (AnnData, CorespectModel):
     """
     Execute CoreSpect clustering with a cache check.
 
@@ -155,7 +156,7 @@ def corespect_clustering(
                   (e.g., q, r, resolution, use_rep).
 
     Returns:
-        AnnData object if copy=True, else None (modifies in-place).
+        AnnData object or  AnnData object and CoreSpect model
     """
     if copy:
         adata = adata.copy()
@@ -167,7 +168,7 @@ def corespect_clustering(
     if has_labels and has_metadata and not force_recalc:
         print(f"Info: CoreSpect results found in `adata.obs['{key_added}']`. "
               "Skipping recalculation. Use `force_recalc=True` to override.")
-        return adata if copy else None
+        return adata, None
 
     # 2. If it has not been run before, or if it is forced to be recalculated ->
     # the core algorithm will be called again
@@ -175,11 +176,11 @@ def corespect_clustering(
         print(f"Info: Force recalculation enabled. Re-running CoreSpect...")
 
     # invoke corespect wrapper to process the data
-    corespect(
+    adata, model = corespect(
         adata,
         key_added=key_added,
         copy=True,
         **kwargs
     )
 
-    return adata if copy else None
+    return adata, model
