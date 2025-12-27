@@ -11,9 +11,21 @@ from ._generic_visualization import (
     ranking,
     dendrogram,
 )
+from ._embedding_visualization_core import (
+    # Embedding Plots
+    tsne,
+    umap,
+    diffmap,
+    draw_graph,
+    spatial,
+    embedding,
+    embedding_density,
+)
 
 __all__ = [
+    # Cplearn Plots
     "coremap",
+    # Generic Plots
     "scatter",
     "heatmap",
     "dotplot",
@@ -25,4 +37,13 @@ __all__ = [
     "ranking",
     "dendrogram",
     "coremap",
+
+    # Embedding Plots
+    "tsne",
+    "umap",
+    "diffmap",
+    "draw_graph",
+    "spatial",
+    "embedding",
+    "embedding_density",
 ]
