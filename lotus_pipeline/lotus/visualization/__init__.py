@@ -44,6 +44,22 @@ from ._trajectory_visualization_core import (
     correlation_matrix,
 )
 
+from ._differential_expression_core import (
+    rank_genes_groups,
+    rank_genes_groups_violin,
+    rank_genes_groups_stacked_violin,
+    rank_genes_groups_heatmap,
+    rank_genes_groups_dotplot,
+    rank_genes_groups_matrixplot,
+    rank_genes_groups_tracksplot,
+)
+
+from ._advanced_classes_visualization_core import (
+    DotPlot,
+    MatrixPlot,
+    StackedViolin,
+)
+
 __all__ = [
     # Cplearn Plots
     "coremap",
@@ -84,4 +100,16 @@ __all__ = [
     "paga_path",
     "paga_compare",
     "correlation_matrix",
+    #  Differential Expression / Maker genes
+    "rank_genes_groups",
+    "rank_genes_groups_violin",
+    "rank_genes_groups_stacked_violin",
+    "rank_genes_groups_heatmap",
+    "rank_genes_groups_dotplot",
+    "rank_genes_groups_matrixplot",
+    "rank_genes_groups_tracksplot",
+    # advanced classes
+    "DotPlot",
+    "MatrixPlot",
+    "StackedViolin",
 ]
