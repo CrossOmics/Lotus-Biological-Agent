@@ -1,7 +1,6 @@
 import pytest
 import scanpy as sc
 from pathlib import Path
-import sys
 from infrastructure.filesystem.storage import AssetStorage
 from infrastructure.workspace_context import workspace_path_manager
 from lotus.preprocessing import neighbors
@@ -90,5 +89,47 @@ def test_scanpy_clustering_persistence(setup_workspace):
     assert 'leiden' in loaded_adata.obs, "Persisted file lost the 'leiden' clustering info!"
     assert loaded_adata.n_obs == 100, "Cell count mismatch!"
 
-    print("✅ TEST PASSED: Data successfully clustered, saved, and reloaded.")
+    print("TEST PASSED: Data successfully clustered, saved, and reloaded.")
 
+
+def test_storage_load_capability(setup_workspace):
+    """
+    Integration Test: Load Flow
+    Verifies that AssetStorage can correctly load an existing .h5ad file
+    using its relative key.
+    """
+
+    # Step 1: Setup - Create a file to load
+    # We create a dummy file first so we have something to test the 'load' function with.
+    print("Step 1: Pre-creating a dummy file for loading test...")
+    dummy_adata = sc.datasets.blobs(n_variables=20, n_observations=50)
+
+    # We use AssetStorage to save it first (trusting Test 1 passed),
+    # or we could manually write it to disk. Let's use storage for consistency.
+    storage = AssetStorage()
+    target_load_key = "cluster/test/test_load.h5ad"
+    storage.save_anndata(dummy_adata, target_load_key)
+
+    # Step 2: Execute Load
+    print(f"Step 2: Attempting to load key: '{target_load_key}'")
+    # This is the core function we are testing
+    loaded_adata = storage.load_anndata(target_load_key)
+
+    # Step 3: Verification
+    print("Step 3: Verifying loaded data integrity...")
+
+    # 3.1 Check object type
+    assert loaded_adata is not None, "Loaded object is None!"
+
+    # 3.2 Check dimensions (Shape)
+    # Original was (50, 20), loaded should be (50, 20)
+    print(f"         Original shape: {dummy_adata.shape}")
+    print(f"         Loaded shape:   {loaded_adata.shape}")
+    assert loaded_adata.n_obs == 50, "Cell count mismatch in loaded data"
+    assert loaded_adata.n_vars == 20, "Gene count mismatch in loaded data"
+
+    # 3.3 Check if it matches the original data structure
+    # (Optional: Check if .obs indices match)
+    assert dummy_adata.obs_names[0] == loaded_adata.obs_names[0], "Index mismatch"
+
+    print("TEST 2 PASSED: Load functionality works.")
