@@ -18,19 +18,9 @@ TEST_DATA_ROOT = PROJECT_ROOT / "data_root"
 def setup_workspace():
     """
     Setup and Teardown for the test environment.
-    1. Ensure 'data_root' exists.
-    2. Initialize the Singleton Context Manager.
-    3. Cleanup test files after execution.
+    Initialize the Singleton Context Manager.
     """
-    print(f"\n[Setup] Initializing workspace at: {TEST_DATA_ROOT}")
-
-    # 1. Ensure the physical workspace directory exists
-    if not TEST_DATA_ROOT.exists():
-        TEST_DATA_ROOT.mkdir(parents=True, exist_ok=True)
-
-    # 2. Initialize the singleton (Simulating App Startup)
-    # This sets the global root path for the AssetStorage to use
-    workspace_path_manager.initialize(str(TEST_DATA_ROOT))
+    workspace_path_manager.initialize()
 
 
 def test_scanpy_clustering_persistence(setup_workspace):

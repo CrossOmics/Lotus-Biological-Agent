@@ -69,7 +69,7 @@ def standardize_load(
             else:
                 raise ValueError(f"Cannot auto-detect format: {path}")
 
-    # 3. Load data
+    # Load data
     try:
         if source_type == '10x_mtx':
             adata = sc.read_10x_mtx(
@@ -148,7 +148,7 @@ def standardize_load(
             raise ValueError(f"Unsupported source_type: {source_type}")
 
     except Exception as e:
-        raise RuntimeError(f"Failed to load {path} ({source_type}): {e}") from e
+        raise RuntimeError(f"Failed to load {path} ({source_type}): {e}")
 
     # Standardization
     if make_unique:
