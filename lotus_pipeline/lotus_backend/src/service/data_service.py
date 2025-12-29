@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from infrastructure.filesystem.storage import AssetStorage
 from lotus.io import standardize_load
-
+import logging
 
 class DatasetService:
     def __init__(self):
@@ -23,7 +23,7 @@ class DatasetService:
             dataset_name: User-defined name (e.g., "Patient 001")
         """
 
-        # converts CSV/MTX -> Standard AnnData object in memory
+        # converts CSV/MTX to Standard AnnData object in memory
         print(f"[Service] Ingesting file: {local_file_path}")
         adata = standardize_load(local_file_path)
 

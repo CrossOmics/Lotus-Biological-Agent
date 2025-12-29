@@ -14,16 +14,7 @@ PROJECT_ROOT = CURRENT_FILE.parents[4]
 TEST_DATA_ROOT = PROJECT_ROOT / "data_root"
 
 
-@pytest.fixture(scope="module")
-def setup_workspace():
-    """
-    Setup and Teardown for the test environment.
-    Initialize the Singleton Context Manager.
-    """
-    workspace_path_manager.initialize()
-
-
-def test_scanpy_clustering_persistence(setup_workspace):
+def test_scanpy_clustering_persistence():
     """
     Verifies that Scanpy clustering results can be correctly persisted 
     to a specific relative path using AssetStorage.
@@ -82,7 +73,7 @@ def test_scanpy_clustering_persistence(setup_workspace):
     print("TEST PASSED: Data successfully clustered, saved, and reloaded.")
 
 
-def test_storage_load_capability(setup_workspace):
+def test_storage_load_capability():
     """
     Integration Test: Load Flow
     Verifies that AssetStorage can correctly load an existing .h5ad file
