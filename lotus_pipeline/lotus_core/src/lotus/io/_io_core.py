@@ -1,8 +1,12 @@
 import warnings
 from pathlib import Path
 from typing import Literal, Sequence, Union, Mapping, Iterable, Iterator, Any
+
+import numpy as np
+import pandas as pd
 import scanpy as sc
 from anndata import AnnData
+from numba.cuda.cudadrv.nvvm import logger
 from scipy.sparse import csr_matrix, csc_matrix, issparse
 
 
@@ -128,6 +132,9 @@ def standardize_load(
                 sheet=kwargs.get('sheet', 0),
                 dtype=kwargs.get('dtype', 'float32'),
             )
+            # fix the bug of original scanpy
+            # cast Excel data to float32 to prevent object dtype errors
+            adata.X = adata.X.astype('float32')
 
         elif source_type == 'visium':
             adata = sc.read_visium(

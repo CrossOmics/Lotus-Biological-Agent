@@ -1,10 +1,10 @@
-import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
 from infrastructure.filesystem.storage import AssetStorage
 from lotus.io import standardize_load
-import logging
+from loguru import logger
+
 
 class DatasetService:
     def __init__(self):
@@ -24,16 +24,14 @@ class DatasetService:
         """
 
         # converts CSV/MTX to Standard AnnData object in memory
-        print(f"[Service] Ingesting file: {local_file_path}")
+        logger.info(f"[Service] Ingesting file: {local_file_path}")
         adata = standardize_load(local_file_path)
-
         # Determine Storage Path (Relative Key)
-        file_uuid = uuid.uuid4().hex[:8]
-        original_name = Path(local_file_path).stem
-        timestamp = datetime.now().strftime("%Y%m%d")
+        file_uuid = uuid.uuid4().hex[:5]
+        original_name = Path(local_file_path).name
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # relative key convention: raw_data/ timestamp_original file name_last 8 chars of UUID.h5ad
-        # example: "raw_data/20231229_MyData_a1b2.h5ad"
+        # relative key convention: raw_data/ timestamp_original file name_last 5 chars of UUID.h5ad
         relative_key = f"raw_data/{timestamp}_{original_name}_{file_uuid}.h5ad"
 
         # Persist to Workspace
@@ -46,5 +44,5 @@ class DatasetService:
             "relative_path": saved_path,
             "n_obs": adata.n_obs,
             "n_vars": adata.n_vars,
-            "file_size_bytes": Path(self.storage.resolve(saved_path)).stat().st_size
+            "file_size_bytes": relative_key
         }

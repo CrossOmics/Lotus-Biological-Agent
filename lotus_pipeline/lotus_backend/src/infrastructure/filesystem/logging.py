@@ -7,9 +7,7 @@ from infrastructure.workspace_context import workspace_path_manager
 
 
 class InterceptHandler(logging.Handler):
-    """
-    Redirect standard logging records to Loguru.
-    """
+    """Redirect stdlib logging records to Loguru."""
 
     def emit(self, record):
         try:
@@ -17,7 +15,6 @@ class InterceptHandler(logging.Handler):
         except ValueError:
             level = record.levelno
 
-        # Find the original caller frame for correct line numbers
         frame, depth = logging.currentframe(), 2
         while frame and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
@@ -28,23 +25,49 @@ class InterceptHandler(logging.Handler):
         )
 
 
+def _configure_log_levels(
+        app_packages: list[str],
+        *,
+        debug_mode: bool,
+) -> None:
+    """
+    Silence noisy third-party libs (ERROR only) and enable app logs.
+    """
+    # 1. Default: Silence everything (allow only ERROR/CRITICAL)
+    logging.getLogger().setLevel(logging.ERROR)
+
+    # 2. Whitelist: Enable DEBUG/INFO for our application code
+    app_level = logging.DEBUG if debug_mode else logging.INFO
+    for pkg in app_packages:
+        logging.getLogger(pkg).setLevel(app_level)
+
+
 def setup_logging(debug_mode: bool = False) -> None:
     """
-    Initialize application logging:
-    - Console output via Loguru
-    - Rotating log file in workspace
-    - Intercept stdlib logging (scanpy, lotus_core, uvicorn)
+    Initialize logging with specific color mapping.
     """
 
-    # Resolve log directory (workspace-aware fallback)
-    log_dir = workspace_path_manager.root / "logs" if workspace_path_manager.root else Path("./logs")
-    log_dir.mkdir(exist_ok=True)
+    # 1. Resolve log path
+    try:
+        log_dir = workspace_path_manager.root / "logs"
+    except RuntimeError:
+        log_dir = Path("./logs")
+
+    log_dir.mkdir(exist_ok=True, parents=True)
     log_file = log_dir / "lotus_app.log"
 
-    # Remove default Loguru handlers
+    # 2. Reset Loguru
     logger.remove()
 
-    # Console logger (for development)
+    # 3. Define Color Scheme
+    # INFO: White, DEBUG: Cyan, WARNING: Yellow, ERROR: Red
+    logger.level("INFO", color="<white>")
+    logger.level("DEBUG", color="<cyan>")
+    logger.level("WARNING", color="<yellow>")
+    logger.level("ERROR", color="<red>")
+
+    # 4. Console Output
+    # <level> tag applies the color defined above to the content inside
     logger.add(
         sys.stderr,
         level="DEBUG" if debug_mode else "INFO",
@@ -56,25 +79,22 @@ def setup_logging(debug_mode: bool = False) -> None:
         ),
     )
 
-    # File logger (for diagnostics and user reports)
+    # 5. File Output (No colors, more retention)
     logger.add(
         log_file,
         rotation="1 day",
         retention="10 days",
         compression="zip",
-        level="INFO",
+        level="DEBUG",
         encoding="utf-8",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function} - {message}"
     )
 
-    # Intercept standard logging
-    logging.basicConfig(
-        handlers=[InterceptHandler()],
-        level=0,
-        force=True,
+    # 6. Intercept Standard Library Logging
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+
+    # 7. Apply Whitelist (Silence noisy libs)
+    _configure_log_levels(
+        app_packages=["lotus", "lotus_core", "lotus_backend"],
+        debug_mode=debug_mode,
     )
-
-    # Silence overly verbose libraries
-    logging.getLogger("uvicorn.access").handlers = [InterceptHandler()]
-    logging.getLogger("matplotlib").setLevel(logging.WARNING)
-
-    logger.info(f"Logging initialized. Log file: {log_file}")
