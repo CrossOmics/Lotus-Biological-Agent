@@ -5,11 +5,6 @@ import pandas as pd
 from anndata import AnnData
 import scanpy.preprocessing as pp_module
 
-'''
-implement domain knowledge or customized methods in this core file
-'''
-
-
 def run_preprocessing(
         adata: AnnData,
         *,

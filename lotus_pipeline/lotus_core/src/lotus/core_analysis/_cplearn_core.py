@@ -1,4 +1,4 @@
-from typing import Literal, Any, Mapping
+from typing import Tuple, Optional
 import numpy as np
 import pandas as pd
 from anndata import AnnData
@@ -22,7 +22,7 @@ def corespect(
         fine_grained: bool = True,
         propagate: bool = True,
         copy: bool = False,
-) -> (AnnData, CorespectModel) | None:
+) -> Optional[Tuple[AnnData, CorespectModel]]:
     """
     Cluster cells using the CoreSpect algorithm.
 

@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from anndata import AnnData
 
-import lotus_pipeline.lotus_core.src.lotus.preprocessing as pp
+import lotus.preprocessing as pp
 
 project_root = Path(__file__).resolve().parent.parent.parent
 if str(project_root) not in sys.path:
