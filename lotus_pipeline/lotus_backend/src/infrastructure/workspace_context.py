@@ -41,7 +41,7 @@ class WorkspaceContext:
 
     def _ensure_directories(self):
         """Creates the standard sub-folders if they don't exist."""
-        dirs = ["raw_data", "analysis", "cache"]
+        dirs = ["raw_data", "analysis", "cache", "objects"]
         for d in dirs:
             (self.root / d).mkdir(exist_ok=True)
 
@@ -77,5 +77,5 @@ class WorkspaceContext:
         return abs_path
 
 
-# Global instance to be imported by other modules
+# Global singleton instance to be imported by other modules
 workspace_path_manager = WorkspaceContext()

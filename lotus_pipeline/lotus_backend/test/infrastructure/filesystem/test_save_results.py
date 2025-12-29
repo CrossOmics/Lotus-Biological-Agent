@@ -17,7 +17,7 @@ TEST_DATA_ROOT = PROJECT_ROOT / "data_root"
 @pytest.fixture(scope="module")
 def setup_workspace():
     """
-    [Fixture] Setup and Teardown for the test environment.
+    Setup and Teardown for the test environment.
     1. Ensure 'data_root' exists.
     2. Initialize the Singleton Context Manager.
     3. Cleanup test files after execution.
