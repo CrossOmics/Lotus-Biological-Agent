@@ -127,14 +127,12 @@ def standardize_load(
             )
 
         elif source_type == 'excel':
-            adata = sc.read_excel(
+            adata = read_excel(
                 path,
                 sheet=kwargs.get('sheet', 0),
                 dtype=kwargs.get('dtype', 'float32'),
             )
-            # fix the bug of original scanpy
-            # cast Excel data to float32 to prevent object dtype errors
-            adata.X = adata.X.astype('float32')
+
 
         elif source_type == 'visium':
             adata = sc.read_visium(
@@ -434,11 +432,15 @@ def read_excel(
     Returns:
         AnnData object.
     """
-    return sc.read_excel(
+    converted_data = sc.read_excel(
         filename,
         sheet,
         dtype=dtype
     )
+    # fix the bug of original scanpy
+    # cast Excel data to float32 to prevent object dtype errors
+    converted_data.X = converted_data.X.astype('float32')
+    return converted_data
 
 
 def read_hdf(

@@ -54,10 +54,12 @@ class WorkspaceContext:
             raise RuntimeError("WorkspaceContext not initialized. Call initialize() first.")
         return self._root_path
 
+    # return the user project space root folder
     @property
     def user_project_root(self) -> Path:
         return self.root / USER_PROJECT_ROOT
 
+    # return the cache folder path
     @property
     def cache_root(self) -> Path:
         return self.root / CACHE_PATH
