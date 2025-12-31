@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Optional
 
+from infrastructure.filesystem.constants.filesystem_constants import USER_PROJECT_ROOT, CACHE_PATH, ARCHIVE_PATH
+
 
 class WorkspaceContext:
     """
@@ -52,6 +54,18 @@ class WorkspaceContext:
             raise RuntimeError("WorkspaceContext not initialized. Call initialize() first.")
         return self._root_path
 
+    @property
+    def user_project_root(self) -> Path:
+        return self.root / USER_PROJECT_ROOT
+
+    @property
+    def cache_root(self) -> Path:
+        return self.root / CACHE_PATH
+
+    @property
+    def archive_root(self) -> Path:
+        return self.root / ARCHIVE_PATH
+
     def resolve(self, relative_path_key: str) -> Path:
         """
         Convert a POSIX-style relative DB path to an absolute filesystem path.
@@ -67,8 +81,9 @@ class WorkspaceContext:
 
         return abs_path
 
+    # initialize the basic folders
     def _ensure_directories(self) -> None:
-        for name in ("raw_data", "analysis", "cache", "objects"):
+        for name in (USER_PROJECT_ROOT, CACHE_PATH, ARCHIVE_PATH):
             (self.root / name).mkdir(exist_ok=True)
 
     def _get_default_root(self) -> Path:

@@ -60,7 +60,7 @@ def test_import_various_formats(file_type):
     file_path = generate_mock_file(TEST_DATA_DIR, file_type)
 
     service = dataset_service.DatasetService()
-    meta = service.import_dataset_from_local(str(file_path), dataset_name=f"Test_{file_type}")
+    meta = service.import_dataset_from_local(str(file_path), project_id="test_id_1", dataset_name=f"Test_{file_type}")
 
     print(f"[Test {file_type}] Metadata:", meta)
 

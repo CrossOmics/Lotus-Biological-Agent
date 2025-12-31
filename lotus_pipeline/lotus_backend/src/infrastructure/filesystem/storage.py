@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from anndata import AnnData
 from lotus.io import read_h5ad
+from .constants.filesystem_constants import USER_PROJECT_ROOT
 # Import the singleton instance from the context module
 from ..workspace_context import workspace_path_manager
 
@@ -11,6 +12,20 @@ class AssetStorage:
     Handles physical file I/O operations for the biological assets.
     The Service Layer uses this class to save/load data without knowing absolute paths.
     """
+    def save_anndata_project(self, adata: AnnData, project_id: str, file_type: str, file_name: str):
+        '''
+        Args:
+            adata (AnnData): The adata object to save.
+            project_id: current working project's unique id
+            file_type: sub folder name under user project path (raw_data, analysis, clustering)
+            file_name: the file name of
+        '''
+        project_path = Path(USER_PROJECT_ROOT)
+        relative_key_path = project_path / project_id / file_type / file_name
+
+        relative_key = relative_key_path.as_posix()
+        path_key = self.save_anndata(adata, relative_key)
+        return path_key
 
     def save_anndata(self, adata: AnnData, relative_key: str) -> str:
         """
