@@ -1,18 +1,16 @@
 from peewee import (
-    Model,
     AutoField,
     CharField,
     TextField,
     DateTimeField
 )
 from datetime import datetime
-from typing import Optional, Dict, Any
-import json
+
 
 from .base_model import BaseModel
 
 
-class Project(BaseModel):
+class ProjectMeta(BaseModel):
     """
     Project table for single-cell analysis projects.
 
@@ -98,7 +96,6 @@ class Project(BaseModel):
         indexes = (
             # Composite index for common query patterns
             (('organism', 'tissue_type'), False),
-            ('project_id', True)
         )
 
     def __repr__(self) -> str:

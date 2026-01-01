@@ -1,94 +1,108 @@
+# infrastructure/database/connection.py
 """
-Database connection management module.
-Handles SQLite database initialization and connection lifecycle.
+Database connection management module for FastAPI.
+Implements thread-local SQLite connections with proper encapsulation.
 """
 
-from pathlib import Path
-from peewee import SqliteDatabase
 import threading
+from pathlib import Path
+from typing import Optional
 
-# Thread-local storage for connection management
-_db_state = threading.local()
+from peewee import SqliteDatabase, Proxy
+from infrastructure.workspace_context import workspace_path_manager
+
+# Global Database Proxy
+database_proxy = Proxy()
 
 
-class DatabaseManager:
+class DatabaseConnection:
     """
-    Singleton database manager for SQLite connections.
-    Ensures only one database instance exists across the application.
+    Thread-safe database connection manager for SQLite.
     """
 
-    _instance = None
-    _lock = threading.Lock()
+    _thread_local = threading.local()
 
-    def __new__(cls, db_path: Path = None):
+    def __init__(self, default_db_path: Optional[Path] = None):
         """
-        Implement singleton pattern with thread-safe initialization.
+        Initialize database connection manager.
 
         Args:
-            db_path: Path to SQLite database file.
+            default_db_path: Default path to SQLite database file.
         """
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
+        self.default_db_path = default_db_path
 
-    def __init__(self, db_path: Path = None):
+    def get_connection(self, db_path: Optional[Path] = None) -> SqliteDatabase:
         """
-        Initialize database connection.
-
-        Args:
-            db_path: Path to SQLite database file. Defaults to './lotus.db'
+        Get or create a thread-local database connection.
         """
-        if not hasattr(self, '_initialized'):
-            self.db_path = db_path or Path('./lotus.db')
+        path_to_use = db_path or self.default_db_path or (workspace_path_manager.root / "lotus.db")
 
-            # Initialize SQLite database with customized settings
-            self.db = SqliteDatabase(
-                self.db_path,
+        if not hasattr(self._thread_local, 'connection'):
+            self._thread_local.connection = SqliteDatabase(
+                path_to_use,
                 pragmas={
-                    'journal_mode': 'wal',  # Write-Ahead Logging for better concurrency
-                    'cache_size': -1024 * 128,  # 128MB cache
-                    'foreign_keys': 1,  # Enable foreign key constraints
-                    'ignore_check_constraints': 0,
-                    'synchronous': 0  # Faster writes (trade-off: less durability)
+                    'journal_mode': 'wal',
+                    'cache_size': -1024 * 128,
+                    'foreign_keys': 1,
+                    'synchronous': 1
                 }
             )
+        elif db_path and db_path != Path(self._thread_local.connection.database):
+            self.close_connection()
+            return self.get_connection(db_path)
 
-            self._initialized = True
-            print(f"[DB] Database initialized at: {self.db_path.absolute()}")
+        return self._thread_local.connection
 
-    def connect(self):
-        """Open database connection."""
-        if self.db.is_closed():
-            self.db.connect()
-            print("[DB] Database connected")
-
-    def close(self):
-        """Close database connection."""
-        if not self.db.is_closed():
-            self.db.close()
-            print("[DB] Database closed")
-
-    def get_connection(self) -> SqliteDatabase:
+    def initialize_proxy(self, db_path: Optional[Path] = None) -> None:
         """
-        Get the current database connection.
-
-        Returns:
-            SqliteDatabase: Active database connection.
+        Create global proxy, bind it to the real database. Invoke this function before creating tables.
         """
-        return self.db
+        db = self.get_connection(db_path)
+        database_proxy.initialize(db)
+        print(f"[DB] Proxy initialized with database: {db.database}")
 
-    def __enter__(self):
-        """Context manager entry: open connection."""
-        self.connect()
-        return self.db
+    def close_connection(self) -> None:
+        """Close and remove the current thread's database connection."""
+        if hasattr(self._thread_local, 'connection'):
+            if not self._thread_local.connection.is_closed():
+                self._thread_local.connection.close()
+            delattr(self._thread_local, 'connection')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit: close connection."""
-        self.close()
+    def connection_exists(self) -> bool:
+        """Check if the current thread has an active connection."""
+        return (hasattr(self._thread_local, 'connection') and
+                not self._thread_local.connection.is_closed())
+
+    def get_current_path(self) -> Optional[Path]:
+        """Get the database path for the current thread's connection."""
+        if hasattr(self._thread_local, 'connection'):
+            return Path(self._thread_local.connection.database)
+        return None
 
 
-# Global database instance (initialized on import)
-db_manager = DatabaseManager()
-db = db_manager.get_connection()
+# Global Database Manager
+default_db_manager: Optional[DatabaseConnection] = None
+
+
+def get_default_db_manager() -> DatabaseConnection:
+    """
+    Lazily create default DatabaseConnection after workspace is initialized.
+    """
+    global default_db_manager
+
+    if default_db_manager is None:
+        default_db_manager = DatabaseConnection(
+            workspace_path_manager.root / "lotus.db"
+        )
+
+    return default_db_manager
+
+
+def get_db() -> SqliteDatabase:
+    """
+    FastAPI / service layer dependency.
+    
+    Returns:
+        SqliteDatabase: Thread-local database connection
+    """
+    return get_default_db_manager().get_connection()
