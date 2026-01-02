@@ -40,7 +40,7 @@ def test_scanpy_clustering_persistence():
     # Step 3: Persist to Storage (File I/O)
     storage = AssetStorage()
 
-    # The expected relative path key required by your business logic
+    # The expected relative path key required by the business logic
     relative_key = "cluster/test/test01.h5ad"
 
     print(f"[Step 3] Saving to workspace key: '{relative_key}'")

@@ -145,11 +145,18 @@ class AnalysisSnapshotsDAO:
             if end_time is not None:
                 snapshot.end_time = end_time
 
-            # Special handling for JSON fields if needed (e.g., merging instead of replacing)
+            # Handle JSON field updates: merge new params into existing ones
             if params_update is not None:
-                # If you want to merge, you'd load existing, update, then save.
-                # Here we simply replace for simplicity, or assume params_update is the full new dict.
-                snapshot.params_json = params_update
+                # Load existing params (default to empty dict if None)
+                current_params = snapshot.params_json or {}
+
+                # Update the dictionary (this modifies current_params in-place)
+                #    - New keys are added
+                #    - Existing keys are updated with new values
+                current_params.update(params_update)
+
+                # Assign back to the model field
+                snapshot.params_json = current_params
 
             snapshot.save()
             return True
