@@ -40,8 +40,10 @@ class Dataset(BaseModel):
     dataset_id = CharField(
         max_length=128,
         null=False,
+        unique=True,
         help_text="dataset business id, naming rule: dataset_<timestamp>_<original_name>_<4_digits_random_suffix>"
     )
+
     # Foreign Key links to project id
     project_primary_id = ForeignKeyField(
         ProjectMeta,
