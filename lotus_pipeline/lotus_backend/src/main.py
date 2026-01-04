@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from infrastructure.database.connection import get_default_db_manager
+from infrastructure.database.database_setup import db_setup
 from infrastructure.filesystem.logging import setup_logging
 from infrastructure.workspace_context import workspace_path_manager
 from util.router_loader import auto_include_routers
@@ -13,18 +15,18 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle."""
 
     print("System starting up...")
-
+    # Initialize workspace context
+    workspace_path_manager.initialize()
     # Initialize logging
     setup_logging(debug_mode=True)
 
-    # Initialize workspace context
-    workspace_path_manager.initialize("")
-
-    # Initialize database connections here (TODO)
+    # Initialize database connections
+    db_setup(ensure_schema=True)
 
     yield
 
     print("System shutting down...")
+    get_default_db_manager().close_connection()
 
 
 app = FastAPI(
@@ -59,6 +61,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
-        port=8000,
+        port=8888,
         reload=True,
     )

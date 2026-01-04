@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 from anndata import AnnData
 from lotus.io import read_h5ad
@@ -9,23 +8,30 @@ from ..workspace_context import workspace_path_manager
 
 class AssetStorage:
     """
-    Handles physical file I/O operations for the biological assets.
-    The Service Layer uses this class to save/load data without knowing absolute paths.
+    Handles physical file I/O operations for biological assets.
+    The Service Layer uses this class to save/load data without managing absolute paths directly.
     """
-    def save_anndata_project(self, adata: AnnData, project_id: str, file_type: str, file_name: str):
-        '''
+
+    def save_anndata_project(self, adata: AnnData, project_id: str, file_type: str, file_name: str) -> str:
+        """
+        Constructs the relative path and saves the AnnData object.
+
         Args:
             adata (AnnData): The adata object to save.
-            project_id: current working project's unique id
-            file_type: sub folder name under user project path (raw_data, analysis, clustering)
-            file_name: the file name of
-        '''
-        project_path = Path(USER_PROJECT_ROOT)
-        relative_key_path = project_path / project_id / file_type / file_name
+            project_id (str): The unique business ID of the current project (e.g., 'p_2025...').
+            file_type (str): Sub-folder name (e.g., 'raw_data', 'analysis').
+            file_name (str): The filename without extension.
 
-        relative_key = relative_key_path.as_posix()
-        path_key = self.save_anndata(adata, relative_key)
-        return path_key
+        Returns:
+            str: The standardized POSIX relative path key for database storage.
+        """
+        # Construct the logical relative path using USER_PROJECT_ROOT
+        relative_path_obj = Path(USER_PROJECT_ROOT) / project_id / file_type / file_name
+
+        # Convert to POSIX style (forward slashes) for DB consistency
+        relative_key = relative_path_obj.as_posix()
+
+        return self.save_anndata(adata, relative_key)
 
     def save_anndata(self, adata: AnnData, relative_key: str) -> str:
         """
@@ -33,22 +39,28 @@ class AssetStorage:
 
         Args:
             adata (AnnData): The object to save.
-            relative_key (str): The intended logical path (e.g., 'analysis/run_01.h5ad').
+            relative_key (str): The intended logical path.
 
         Returns:
-            str: The standardized POSIX relative path string to store in SQLite.
+            str: The standardized POSIX relative path string.
         """
         # 1. Resolve the absolute path using the Context Manager
         target_abs_path = workspace_path_manager.resolve(relative_key)
 
-        # 2. Ensure parent directory exists (e.g., if key is 'analysis/batch1/run.h5ad')
+        # 2. Ensure parent directory exists
         target_abs_path.parent.mkdir(parents=True, exist_ok=True)
 
         # 3. Write the file (using gzip to save disk space)
         print(f"[IO] Saving AnnData to: {target_abs_path}")
-        adata.write_h5ad(target_abs_path, compression='gzip')
+        try:
+            adata.write_h5ad(target_abs_path, compression='gzip')
+        except Exception as e:
+            # Clean up if write fails to avoid corrupt files
+            if target_abs_path.exists():
+                target_abs_path.unlink()
+            raise IOError(f"Failed to write AnnData file: {e}")
 
-        # 4. Return POSIX path (forward slashes) for database consistency across OS
+        # 4. Return POSIX path
         return Path(relative_key).as_posix()
 
     def load_anndata(self, relative_key: str) -> AnnData:
@@ -68,23 +80,3 @@ class AssetStorage:
 
         print(f"[IO] Loading AnnData from: {source_abs_path}")
         return read_h5ad(source_abs_path)
-
-    def import_external_file(self, source_path_str: str) -> str:
-        """
-        Copies an external file (e.g., from Downloads) into the Workspace 'raw_data' folder.
-        """
-        src = Path(source_path_str)
-        if not src.exists():
-            raise FileNotFoundError("Source file not found.")
-
-        # Construct a relative key for the internal workspace
-        # e.g., raw_data/pbmc68k.h5ad
-        relative_key = f"raw_data/{src.name}"
-
-        # Resolve destination
-        dest_abs_path = workspace_path_manager.resolve(relative_key)
-
-        # Perform the copy
-        shutil.copy2(src, dest_abs_path)
-
-        return relative_key

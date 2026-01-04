@@ -51,6 +51,12 @@ class ProjectMeta(BaseModel):
         help_text="Project name displayed in user interface"
     )
 
+    # Project Root folder
+    project_path = TextField(
+        null=False,
+        help_text="Project root folder"
+    )
+
     # Temporal fields (ISO8601 format: 2025-01-30T18:20:00Z)
     create_time = DateTimeField(
         default=datetime.utcnow,

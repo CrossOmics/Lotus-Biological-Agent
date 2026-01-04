@@ -46,7 +46,7 @@ class WorkspaceContext:
             RuntimeError: If already initialized and force=False.
         """
         if self._is_initialized and not force:
-            raise RuntimeError(
+            print(
                 f"WorkspaceContext already initialized at: {self._root_path}. "
                 "Use force=True to re-initialize."
             )

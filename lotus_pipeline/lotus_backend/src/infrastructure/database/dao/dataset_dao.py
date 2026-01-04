@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from peewee import DoesNotExist, IntegrityError
 
 from ..model.dataset_model import Dataset
@@ -14,29 +14,31 @@ class DatasetDAO:
 
     @staticmethod
     def create_dataset(
-            project: ProjectMeta,
+            project: Union[ProjectMeta, str],
             dataset_id: str,
             dataset_name: str,
+            dataset_path: str,
             ext_info: Optional[Dict[str, Any]] = None
     ) -> Optional[Dataset]:
         """
         Creates a new Dataset record.
 
         Args:
-            project (ProjectMeta): The parent project instance this dataset belongs to.
-            dataset_id (str): Unique business identifier (e.g., 'dataset_20250101_name_1234').
+            project (ProjectMeta | str): The parent project instance or project_id string.
+            dataset_id (str): Unique business identifier.
             dataset_name (str): Display name for the dataset.
-            ext_info (dict, optional): Dictionary containing file metadata (e.g., file path, size).
+            dataset_path (str): Relative file path in storage.
+            ext_info (dict, optional): Dictionary containing file metadata.
 
         Returns:
             Dataset: The created dataset instance if successful.
-            None: If creation fails (e.g., integrity error).
         """
         try:
             dataset = Dataset.create(
-                project_primary_id=project,
+                project_id=project,  # Matches the ForeignKeyField name in Model
                 dataset_id=dataset_id,
                 dataset_name=dataset_name,
+                dataset_path=dataset_path,  # [Fix] Insert the path
                 uploaded_time=datetime.utcnow(),
                 ext_info=ext_info or {}
             )
@@ -96,7 +98,7 @@ class DatasetDAO:
         try:
             query = (Dataset
                      .select()
-                     .where(Dataset.project_primary_id == project_pk)
+                     .where(Dataset.project_id == project_pk)
                      .order_by(Dataset.uploaded_time.desc()))
             return list(query)
         except Exception as e:
@@ -107,18 +109,11 @@ class DatasetDAO:
     def update_dataset(
             pk_id: int,
             dataset_name: Optional[str] = None,
+            dataset_path: Optional[str] = None,  # [New Field] Allow update
             ext_info_update: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Updates an existing dataset record.
-
-        Args:
-            pk_id (int): Primary key of the dataset to update.
-            dataset_name (str, optional): New display name.
-            ext_info_update (dict, optional): Dictionary of metadata to merge/replace.
-
-        Returns:
-            bool: True if successful, False otherwise.
         """
         try:
             dataset = Dataset.get_by_id(pk_id)
@@ -126,11 +121,14 @@ class DatasetDAO:
             if dataset_name is not None:
                 dataset.dataset_name = dataset_name
 
-            # Since ext_info is a JSONField, we can update it directly
+            if dataset_path is not None:
+                dataset.dataset_path = dataset_path
+
             if ext_info_update is not None:
-                # Assuming complete replacement for simplicity,
-                # logic could be added to merge dictionaries if needed.
-                dataset.ext_info = ext_info_update
+                # Merge or replace logic for JSON
+                current_info = dataset.ext_info or {}
+                current_info.update(ext_info_update)
+                dataset.ext_info = current_info
 
             dataset.save()
             return True

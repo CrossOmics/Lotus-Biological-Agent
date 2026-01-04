@@ -16,6 +16,7 @@ class ProjectMetaDAO:
     def create_project(
             project_id: str,
             project_name: str,
+            project_path: str,
             organism: Optional[str] = None,
             tissue_type: Optional[str] = None,
             description: Optional[str] = None,
@@ -27,6 +28,7 @@ class ProjectMetaDAO:
         Args:
             project_id (str): Unique identifier for the project (e.g., 'p_20250101_12345').
             project_name (str): Human-readable name for the project.
+            project_path (str): project file root path
             organism (str, optional): Species information (e.g., 'Human').
             tissue_type (str, optional): Tissue origin (e.g., 'Liver').
             description (str, optional): Project description.
@@ -43,6 +45,7 @@ class ProjectMetaDAO:
             project = ProjectMeta.create(
                 project_id=project_id,
                 project_name=project_name,
+                project_path=project_path,
                 organism=organism,
                 tissue_type=tissue_type,
                 description=description,
@@ -74,6 +77,25 @@ class ProjectMetaDAO:
             return ProjectMeta.get_by_id(pk_id)
         except DoesNotExist:
             print(f"[Warning] Project with Primary Key {pk_id} not found.")
+            return None
+
+    @staticmethod
+    def get_project_file_path(project_id: str) -> Optional[str]:
+        """
+        Retrieves a single project by its unique business string identifier.
+
+        Args:
+            project_id (str): The unique string identifier (e.g., 'p_2025...').
+
+        Returns:
+            ProjectMeta: The found project instance with file path
+            None: If no record is found.
+        """
+        try:
+            project = ProjectMeta.get(ProjectMeta.project_id == project_id)
+            return project.project_path
+        except DoesNotExist:
+            print(f"[Warning] Project with ID '{project_id}' not found.")
             return None
 
     @staticmethod
@@ -142,6 +164,7 @@ class ProjectMetaDAO:
             pk_id: int,
             project_name: Optional[str] = None,
             description: Optional[str] = None,
+            project_path: Optional[str] = None,
             organism: Optional[str] = None,
             tissue_type: Optional[str] = None,
             ext_info: Optional[str] = None
@@ -169,6 +192,10 @@ class ProjectMetaDAO:
 
             if project_name is not None:
                 project.project_name = project_name
+                changed = True
+
+            if project_path is not None:
+                project.project_path = project_path
                 changed = True
 
             if description is not None:

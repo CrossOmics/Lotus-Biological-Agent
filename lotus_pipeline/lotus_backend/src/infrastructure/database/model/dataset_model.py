@@ -1,3 +1,5 @@
+from dataclasses import field
+
 from peewee import (
     AutoField,
     CharField,
@@ -44,14 +46,20 @@ class Dataset(BaseModel):
         help_text="dataset business id, naming rule: dataset_<timestamp>_<original_name>_<4_digits_random_suffix>"
     )
 
-    # Foreign Key links to project id
-    project_primary_id = ForeignKeyField(
+    # Foreign Key links to ProjectMeta's project id
+    project_id = ForeignKeyField(
         ProjectMeta,
+        field='project_id',
         backref='datasets',
         on_delete='CASCADE',
-        help_text="Reference to the parent project"
+        column_name='project_id',
+        help_text="Reference to the parent project's business ID"
     )
 
+    dataset_path = TextField(
+        null=False,
+        help_text='Dataset relative file path in file workspace'
+    )
     # Display Name
     dataset_name = CharField(
         max_length=255,
@@ -76,12 +84,12 @@ class Dataset(BaseModel):
         table_name = 'dataset'
         indexes = (
             # Index for quick lookup by project
-            (('project_primary_id',), False),
+            (('project_id',), False),
         )
 
     def __repr__(self) -> str:
         return (
             f"<Dataset id={self.id} "
-            f"name='{self.name}' "
+            f"name='{self.dataset_name}' "
             f"project_id={self.project_id}>"
         )
