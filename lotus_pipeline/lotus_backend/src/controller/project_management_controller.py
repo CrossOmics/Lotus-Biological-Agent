@@ -2,9 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from dto.request.create_project_request import CreateProjectRequest
 from dto.response.project_response import ProjectResponse
-# Service Imports
 from service.dataset_service import DatasetService
-from infrastructure.filesystem.constants.filesystem_constants import USER_PROJECT_ROOT
 from service.project_management_service import ProjectManagementService
 
 router = APIRouter(prefix="/api/v1/projects/import", tags=["Project Management"])

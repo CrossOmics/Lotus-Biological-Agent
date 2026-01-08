@@ -45,7 +45,8 @@ class ProjectManagementService:
         # 2. Determine Project Root Path
         # Logic: USER_PROJECT_ROOT / project_id
         # We store the relative path string (compatible with pathlib logic later)
-        project_path_obj = Path("projects") / project_id
+        from infrastructure.filesystem.constants.filesystem_constants import USER_PROJECT_ROOT
+        project_path_obj = Path(USER_PROJECT_ROOT) / project_id
         project_path_str = project_path_obj.as_posix()
 
         # 3. Persist to Database via DAO

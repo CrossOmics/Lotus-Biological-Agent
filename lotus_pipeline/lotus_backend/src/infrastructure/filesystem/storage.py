@@ -1,4 +1,8 @@
+import json
+import pickle
 from pathlib import Path
+from typing import Union, Any
+
 from anndata import AnnData
 from lotus.io import read_h5ad
 from .constants.filesystem_constants import USER_PROJECT_ROOT
@@ -80,3 +84,66 @@ class AssetStorage:
 
         print(f"[IO] Loading AnnData from: {source_abs_path}")
         return read_h5ad(source_abs_path)
+
+    def save_file(self, content: Union[str, bytes, dict, Any], relative_key: str, **kwargs) -> str:
+        """
+        Generic method to save arbitrary files to the workspace.
+        Supports: JSON, Strings, Bytes, Matplotlib Figures, PIL Images, and Pickle objects.
+
+        Args:
+            content: The data object to save.
+            relative_key: The logical path (e.g., 'qc/violin_plot.pdf').
+            **kwargs: Additional arguments passed to the underlying save method (e.g., indent=2 for JSON).
+
+        Returns:
+            str: The POSIX relative path.
+        """
+        target_abs_path = workspace_path_manager.resolve(relative_key)
+        target_abs_path.parent.mkdir(parents=True, exist_ok=True)
+
+        print(f"[IO] Saving generic file to: {target_abs_path}")
+
+        try:
+            # --- 1. Matplotlib Figure Support (Priority for Bio-Science) ---
+            # Duck typing: Check if object has 'savefig' method (e.g., plt.figure)
+            if hasattr(content, 'savefig'):
+                # Default to tight bounding box for cleaner plots if not specified
+                save_kwargs = {'bbox_inches': 'tight'}
+                save_kwargs.update(kwargs) # Allow override
+                content.savefig(target_abs_path, **save_kwargs)
+
+            # --- 2. PIL Image Support ---
+            # Duck typing: Check if object has 'save' method (but is not bytes/str)
+            elif hasattr(content, 'save') and not isinstance(content, (bytes, str)):
+                content.save(target_abs_path, **kwargs)
+
+            # --- 3. JSON Dictionary ---
+            elif isinstance(content, (dict, list)) and target_abs_path.suffix == '.json':
+                with open(target_abs_path, 'w', encoding='utf-8') as f:
+                    # Allow passing 'indent' in kwargs, default to 2
+                    indent = kwargs.get('indent', 2)
+                    json.dump(content, f, indent=indent)
+
+            # --- 4. Binary Data (Bytes) ---
+            # Handles raw image bytes, PDF streams, etc.
+            elif isinstance(content, bytes):
+                with open(target_abs_path, 'wb') as f:
+                    f.write(content)
+
+            # --- 5. Text Data (String) ---
+            elif isinstance(content, str):
+                with open(target_abs_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+
+            # --- 6. Fallback: Python Pickle ---
+            else:
+                with open(target_abs_path, 'wb') as f:
+                    pickle.dump(content, f)
+
+        except Exception as e:
+            # Clean up partial files on failure
+            if target_abs_path.exists():
+                target_abs_path.unlink()
+            raise IOError(f"Failed to save generic file ({relative_key}): {e}")
+
+        return Path(relative_key).as_posix()
