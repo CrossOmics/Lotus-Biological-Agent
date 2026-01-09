@@ -206,6 +206,13 @@ class PreprocessingService:
     def apply_filter(self, request: FilterQCRequest) -> FilterQCResponse:
         """
         Applies QC filtering logic and persists the result.
+
+        Strategy:
+        1. Load Raw Data (Clean Slate).
+        2. Attempt to merge QC metrics from the Lightweight Cache (Obs/Var only).
+        3. If cache miss/invalid, fallback to re-calculating metrics.
+        4. Apply filters.
+        5. Save Snapshot.
         """
 
         # 1. Validation & Loading Raw Data
@@ -214,14 +221,13 @@ class PreprocessingService:
             raise ValueError(f"Dataset {request.dataset_id} not found.")
 
         try:
-            # Load Raw Data
             adata = self.storage.load_anndata(dataset.dataset_path)
         except FileNotFoundError:
             raise FileNotFoundError(f"Physical file missing for dataset: {dataset.dataset_path}")
         except Exception as e:
             raise RuntimeError(f"Failed to load source file: {str(e)}")
 
-        # 2. Try Loading Lightweight Cache & Merge
+        # 2. [OPTIMIZED] Try Loading Lightweight Cache & Merge
         cache_file_name = f"{request.dataset_id}_qc_metrics.h5ad"
         cache_key = get_project_relative(request.project_id, CACHE_SUBSPACE, cache_file_name)
 
@@ -232,44 +238,50 @@ class PreprocessingService:
             adata_cache = self.storage.load_anndata(cache_key)
 
             if not adata.obs_names.equals(adata_cache.obs_names):
-                logger.warning("Cache index mismatch. Ignoring cache.")
+                logger.warning("Cache index mismatch (barcodes differ). Ignoring cache.")
             else:
+                # Calculate the difference in columns
                 new_obs_cols = adata_cache.obs.columns.difference(adata.obs.columns)
                 new_var_cols = adata_cache.var.columns.difference(adata.var.columns)
 
+                # Safely assign new columns one by one
+                # This avoids "Can only assign pd.DataFrame to obs" error
                 if len(new_obs_cols) > 0:
-                    adata.obs = list(
-                        adata.obs.join(adata_cache.obs[new_obs_cols]))  # Join is safer/faster for aligned index
                     for col in new_obs_cols:
+                        # Scanpy/Pandas aligns by index automatically here
                         adata.obs[col] = adata_cache.obs[col]
 
                 if len(new_var_cols) > 0:
                     for col in new_var_cols:
                         adata.var[col] = adata_cache.var[col]
 
-                # Check validity
+                # Verify validity
                 if 'total_counts' in adata.obs:
                     metrics_loaded = True
-                    logger.success("Lightweight Cache Hit & Merged successfully.")
+                    logger.info(f"Lightweight Cache Hit! Merged {len(new_obs_cols)} obs columns.")
                 else:
-                    logger.warning("Cache loaded but missing 'total_counts' column.")
+                    logger.warning("Cache loaded but missing 'total_counts'. Triggering fallback.")
 
         except FileNotFoundError:
             logger.info("Cache Miss. Proceeding to fallback.")
         except Exception as e:
+            # Catching generic error to ensure pipeline robustness
             logger.error(f"Error merging cache: {e}. Proceeding to fallback.")
 
-        # 3. Fallback: Recalculate Metrics
+        # 3. Fallback: Recalculate Metrics (If cache failed or missing)
         if not metrics_loaded:
             logger.info("Fallback: Recalculating QC metrics...")
 
+            # Retrieve Project for Organism info
+            # Note: Ensure your DAO has get_project_by_id (checking both PK types if needed)
+            project = None
             try:
-                project = self.project_dao.get_project_by_project_id(request.project_id)
-            except AttributeError:
-                project = None
+                # Try fetching by string ID first (Business ID)
+                project = self.project_dao.get_project_by_id(request.project_id)
+            except:
+                pass
 
             organism = project.organism if project else "Human"
-            logger.info(f"Using organism: {organism}")
 
             # Define Prefixes
             mt_prefix = "mt-" if organism.lower() == "mouse" else "MT-"
@@ -279,7 +291,7 @@ class PreprocessingService:
             adata.var['mt'] = adata.var_names.str.startswith(mt_prefix)
             adata.var['hb'] = adata.var_names.str.contains(hb_pattern, regex=True)
 
-            # Calculate
+            # Calculate metrics inplace
             calculate_qc_metrics(
                 adata,
                 qc_vars=['mt', 'hb'],
@@ -288,7 +300,7 @@ class PreprocessingService:
                 inplace=True
             )
 
-            # Self-Repair: Save the recalculation to cache for next time
+            # Self-Repair: Save to Cache
             try:
                 logger.info(f"Caching recalculated metrics to: {cache_key}")
                 adata_cache_new = AnnData(
@@ -300,19 +312,22 @@ class PreprocessingService:
             except Exception as e:
                 logger.warning(f"Failed to save fallback cache: {e}")
 
-        # 4. Apply Filtering (Business as usual)
+        # 4. Apply Filtering
         initial_cells = adata.n_obs
+        logger.info(f"Applying filters. Initial cells: {initial_cells}")
 
         if request.min_genes > 0:
             filter_cells(adata, min_genes=request.min_genes)
         if request.min_cells > 0:
             filter_genes(adata, min_cells=request.min_cells)
-        if request.max_counts:
-            # Safe access now
-            if 'total_counts' in adata.obs:
-                adata = adata[adata.obs['total_counts'] <= request.max_counts, :]
+
+        # Safe filtering now that metrics are guaranteed
+        if request.max_counts is not None and 'total_counts' in adata.obs:
+            adata = adata[adata.obs['total_counts'] <= request.max_counts, :]
+
         if request.pct_mt_max is not None and 'pct_counts_mt' in adata.obs:
             adata = adata[adata.obs['pct_counts_mt'] <= request.pct_mt_max, :]
+
         if request.pct_hb_max is not None and 'pct_counts_hb' in adata.obs:
             adata = adata[adata.obs['pct_counts_hb'] <= request.pct_hb_max, :]
 
@@ -331,7 +346,7 @@ class PreprocessingService:
         except Exception as e:
             raise RuntimeError(f"Failed to save snapshot to storage: {str(e)}")
 
-        # 6. DB Record
+        # 6. Create DB Record
         params = request.model_dump()
 
         db_record = self.snapshot_dao.create_snapshot(
