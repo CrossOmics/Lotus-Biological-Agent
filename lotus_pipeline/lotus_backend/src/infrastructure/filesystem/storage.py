@@ -104,7 +104,7 @@ class AssetStorage:
         print(f"[IO] Saving generic file to: {target_abs_path}")
 
         try:
-            # --- 1. Matplotlib Figure Support (Priority for Bio-Science) ---
+            # 1. Matplotlib Figure Support (Priority for Bio-Science)
             # Duck typing: Check if object has 'savefig' method (e.g., plt.figure)
             if hasattr(content, 'savefig'):
                 # Default to tight bounding box for cleaner plots if not specified
@@ -112,30 +112,30 @@ class AssetStorage:
                 save_kwargs.update(kwargs) # Allow override
                 content.savefig(target_abs_path, **save_kwargs)
 
-            # --- 2. PIL Image Support ---
+            # 2. PIL Image Support
             # Duck typing: Check if object has 'save' method (but is not bytes/str)
             elif hasattr(content, 'save') and not isinstance(content, (bytes, str)):
                 content.save(target_abs_path, **kwargs)
 
-            # --- 3. JSON Dictionary ---
+            # 3. JSON Dictionary
             elif isinstance(content, (dict, list)) and target_abs_path.suffix == '.json':
                 with open(target_abs_path, 'w', encoding='utf-8') as f:
                     # Allow passing 'indent' in kwargs, default to 2
                     indent = kwargs.get('indent', 2)
                     json.dump(content, f, indent=indent)
 
-            # --- 4. Binary Data (Bytes) ---
+            # 4. Binary Data (Bytes)
             # Handles raw image bytes, PDF streams, etc.
             elif isinstance(content, bytes):
                 with open(target_abs_path, 'wb') as f:
                     f.write(content)
 
-            # --- 5. Text Data (String) ---
+            # 5. Text Data (String)
             elif isinstance(content, str):
                 with open(target_abs_path, 'w', encoding='utf-8') as f:
                     f.write(content)
 
-            # --- 6. Fallback: Python Pickle ---
+            # 6. Fallback: Python Pickle
             else:
                 with open(target_abs_path, 'wb') as f:
                     pickle.dump(content, f)

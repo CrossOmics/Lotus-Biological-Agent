@@ -1,21 +1,36 @@
+import uuid
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 from typing import Optional, Dict
+
+from anndata import AnnData
 from fastapi import Depends
-from infrastructure.filesystem.constants.filesystem_constants import QC_SUBSPACE
-from lotus.preprocessing import calculate_qc_metrics
+
+from infrastructure.database.dao.analysis_snapshots_dao import AnalysisSnapshotsDAO
+from infrastructure.filesystem.constants.filesystem_constants import QC_SUBSPACE, SNAPSHOTS_SUBSPACE, CACHE_SUBSPACE
+from lotus.preprocessing import calculate_qc_metrics, filter_cells, filter_genes
 from lotus.visualization import violin, scatter
+from infrastructure.database.dao.project_meta_dao import ProjectMetaDAO
+
 from infrastructure.database.dao.dataset_dao import DatasetDAO
 from infrastructure.filesystem.storage import AssetStorage
 from dto.response.qc_result_dto import QCResultDTO
-
+from dto.request.filter_qc_request import FilterQCRequest
+from dto.response.filter_qc_response import FilterQCResponse
 from loguru import logger
 
 from util.path_utils import get_project_relative
 
 
 class PreprocessingService:
-    def __init__(self, dataset_dao: DatasetDAO = Depends(), storage: AssetStorage = Depends()):
+    def __init__(self, dataset_dao: DatasetDAO = Depends(),
+                 snapshot_dao: AnalysisSnapshotsDAO = Depends(),
+                 project_dao: ProjectMetaDAO = Depends(),
+                 storage: AssetStorage = Depends()):
         self.dataset_dao = dataset_dao
+        self.snapshot_dao = snapshot_dao
+        self.project_dao = project_dao
         self.storage = storage
 
     def qc_calculation(
@@ -76,6 +91,11 @@ class PreprocessingService:
         # Run QC calculation
         qc_vars = ['mt', 'ribo', 'hb']
 
+        # cache QC Calculation score
+        # Record the column names before calculation
+        obs_cols_before = set(adata.obs.columns)
+        var_cols_before = set(adata.var.columns)
+
         calculate_qc_metrics(
             adata,
             qc_vars=qc_vars,
@@ -83,6 +103,29 @@ class PreprocessingService:
             log1p=False,
             inplace=True
         )
+
+        # Newly added columns = current columns - previous columns
+        obs_new_cols = list(set(adata.obs.columns) - obs_cols_before)
+        var_new_cols = list(set(adata.var.columns) - var_cols_before)
+        logger.debug(f"Incremental columns to cache (Obs): {obs_new_cols}")
+
+        #  Minimal storage Create an AnnData object containing only incremental data
+        try:
+            adata_cache = AnnData(
+                X=None,  # Do not store X
+                obs=adata.obs[obs_new_cols].copy(),  # Store only new obs columns
+                var=adata.var[var_new_cols].copy()  # Store only new var columns
+            )
+
+            # Save cache
+            cache_file_name = f"{dataset_id}_qc_metrics.h5ad"
+            cache_relative_key = get_project_relative(
+                project_id, CACHE_SUBSPACE, cache_file_name
+            )
+            self.storage.save_anndata(adata_cache, cache_relative_key)
+
+        except Exception as e:
+            logger.warning(f"Failed to cache incremental metrics: {e}")
 
         # Generate & Save UI Data (JSON)
         # Extract columns required for frontend Violin/Scatter plots
@@ -160,5 +203,152 @@ class PreprocessingService:
             scatter_genes_path=scatter_genes_path
         )
 
+    def apply_filter(self, request: FilterQCRequest) -> FilterQCResponse:
+        """
+        Applies QC filtering logic and persists the result.
+        """
 
-    
+        # 1. Validation & Loading Raw Data
+        dataset = self.dataset_dao.get_dataset_by_business_id(request.dataset_id)
+        if not dataset:
+            raise ValueError(f"Dataset {request.dataset_id} not found.")
+
+        try:
+            # Load Raw Data
+            adata = self.storage.load_anndata(dataset.dataset_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Physical file missing for dataset: {dataset.dataset_path}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load source file: {str(e)}")
+
+        # 2. Try Loading Lightweight Cache & Merge
+        cache_file_name = f"{request.dataset_id}_qc_metrics.h5ad"
+        cache_key = get_project_relative(request.project_id, CACHE_SUBSPACE, cache_file_name)
+
+        metrics_loaded = False
+
+        try:
+            logger.info(f"Attempting to load QC Metrics Cache: {cache_key}")
+            adata_cache = self.storage.load_anndata(cache_key)
+
+            if not adata.obs_names.equals(adata_cache.obs_names):
+                logger.warning("Cache index mismatch. Ignoring cache.")
+            else:
+                new_obs_cols = adata_cache.obs.columns.difference(adata.obs.columns)
+                new_var_cols = adata_cache.var.columns.difference(adata.var.columns)
+
+                if len(new_obs_cols) > 0:
+                    adata.obs = list(
+                        adata.obs.join(adata_cache.obs[new_obs_cols]))  # Join is safer/faster for aligned index
+                    for col in new_obs_cols:
+                        adata.obs[col] = adata_cache.obs[col]
+
+                if len(new_var_cols) > 0:
+                    for col in new_var_cols:
+                        adata.var[col] = adata_cache.var[col]
+
+                # Check validity
+                if 'total_counts' in adata.obs:
+                    metrics_loaded = True
+                    logger.success("Lightweight Cache Hit & Merged successfully.")
+                else:
+                    logger.warning("Cache loaded but missing 'total_counts' column.")
+
+        except FileNotFoundError:
+            logger.info("Cache Miss. Proceeding to fallback.")
+        except Exception as e:
+            logger.error(f"Error merging cache: {e}. Proceeding to fallback.")
+
+        # 3. Fallback: Recalculate Metrics
+        if not metrics_loaded:
+            logger.info("Fallback: Recalculating QC metrics...")
+
+            try:
+                project = self.project_dao.get_project_by_project_id(request.project_id)
+            except AttributeError:
+                project = None
+
+            organism = project.organism if project else "Human"
+            logger.info(f"Using organism: {organism}")
+
+            # Define Prefixes
+            mt_prefix = "mt-" if organism.lower() == "mouse" else "MT-"
+            hb_pattern = "^Hb[^(p)]" if organism.lower() == "mouse" else "^HB[^(P)]"
+
+            # Annotate
+            adata.var['mt'] = adata.var_names.str.startswith(mt_prefix)
+            adata.var['hb'] = adata.var_names.str.contains(hb_pattern, regex=True)
+
+            # Calculate
+            calculate_qc_metrics(
+                adata,
+                qc_vars=['mt', 'hb'],
+                percent_top=None,
+                log1p=False,
+                inplace=True
+            )
+
+            # Self-Repair: Save the recalculation to cache for next time
+            try:
+                logger.info(f"Caching recalculated metrics to: {cache_key}")
+                adata_cache_new = AnnData(
+                    X=None,
+                    obs=adata.obs.copy(),
+                    var=adata.var.copy()
+                )
+                self.storage.save_anndata(adata_cache_new, cache_key)
+            except Exception as e:
+                logger.warning(f"Failed to save fallback cache: {e}")
+
+        # 4. Apply Filtering (Business as usual)
+        initial_cells = adata.n_obs
+
+        if request.min_genes > 0:
+            filter_cells(adata, min_genes=request.min_genes)
+        if request.min_cells > 0:
+            filter_genes(adata, min_cells=request.min_cells)
+        if request.max_counts:
+            # Safe access now
+            if 'total_counts' in adata.obs:
+                adata = adata[adata.obs['total_counts'] <= request.max_counts, :]
+        if request.pct_mt_max is not None and 'pct_counts_mt' in adata.obs:
+            adata = adata[adata.obs['pct_counts_mt'] <= request.pct_mt_max, :]
+        if request.pct_hb_max is not None and 'pct_counts_hb' in adata.obs:
+            adata = adata[adata.obs['pct_counts_hb'] <= request.pct_hb_max, :]
+
+        logger.info(f"Filtering complete. Remaining cells: {adata.n_obs}")
+
+        # 5. Save Snapshot
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_suffix = uuid.uuid4().hex[:4]
+        snapshot_id = f"snap_{timestamp_str}_{unique_suffix}"
+
+        file_name = f"node_root_qc_{snapshot_id}.h5ad"
+        relative_key = get_project_relative(request.project_id, SNAPSHOTS_SUBSPACE, file_name)
+
+        try:
+            saved_path = self.storage.save_anndata(adata, relative_key)
+        except Exception as e:
+            raise RuntimeError(f"Failed to save snapshot to storage: {str(e)}")
+
+        # 6. DB Record
+        params = request.model_dump()
+
+        db_record = self.snapshot_dao.create_snapshot(
+            dataset_id=dataset.dataset_id,
+            snapshot_id=snapshot_id,
+            branch_name="QC Filtered",
+            snapshot_path=saved_path,
+            params_json=params,
+            user_notes=f"Filtered from {initial_cells} to {adata.n_obs} cells."
+        )
+
+        if not db_record:
+            raise RuntimeError("Database integrity error: Failed to create snapshot record.")
+
+        return FilterQCResponse(
+            snapshot_id=snapshot_id,
+            snapshot_path=saved_path,
+            n_obs_remaining=adata.n_obs,
+            n_vars_remaining=adata.n_vars
+        )

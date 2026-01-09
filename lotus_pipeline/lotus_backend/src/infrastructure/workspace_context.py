@@ -4,7 +4,6 @@ import threading
 
 from infrastructure.filesystem.constants.filesystem_constants import (
     USER_PROJECT_ROOT,
-    CACHE_PATH,
     ARCHIVE_PATH
 )
 
@@ -72,10 +71,6 @@ class WorkspaceContext:
         """User project space root folder."""
         return self.root / USER_PROJECT_ROOT
 
-    @property
-    def cache_root(self) -> Path:
-        """Cache folder path."""
-        return self.root / CACHE_PATH
 
     @property
     def archive_root(self) -> Path:
@@ -143,7 +138,7 @@ class WorkspaceContext:
 
     def _ensure_directories(self) -> None:
         """Create essential subdirectories if they don't exist."""
-        for name in (USER_PROJECT_ROOT, CACHE_PATH, ARCHIVE_PATH):
+        for name in (USER_PROJECT_ROOT, ARCHIVE_PATH):
             (self._root_path / name).mkdir(parents=True, exist_ok=True)
 
     def _get_default_root(self) -> Path:
