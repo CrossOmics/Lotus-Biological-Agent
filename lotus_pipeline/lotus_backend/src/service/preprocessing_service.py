@@ -59,73 +59,10 @@ class PreprocessingService:
         # Load raw data from storage
         adata = self.storage.load_anndata(dataset.dataset_path)
 
-        # 2. Define Gene Prefixes (Logic for mt/MT detection)
-        # Defaults
-        mt_prefix = "MT-"
-        ribo_prefix = ("RPS", "RPL")
-        hb_pattern = "^HB[^(P)]"
+        cache_file_name = f"{dataset_id}_qc_metrics.h5ad"
+        cache_key = get_project_relative(project_id, CACHE_SUBSPACE, cache_file_name)
 
-        # Organism Logic
-        if organism.lower() == "mouse":
-            mt_prefix = "mt-"
-            ribo_prefix = ("Rps", "Rpl")
-            hb_pattern = "^Hb[^(p)]"
-        elif organism.lower() == "human":
-            pass  # Use defaults
-
-        # Override with custom prefixes if provided
-        if custom_prefix:
-            mt_prefix = custom_prefix.get("mt", mt_prefix)
-            ribo_prefix = tuple(custom_prefix.get("ribo", ribo_prefix))
-            hb_pattern = custom_prefix.get("hb", hb_pattern)
-
-        # 3. Annotate Genes & Calculate Metrics
-        logger.info(f"Calculating QC with prefixes: MT={mt_prefix}, Ribo={ribo_prefix}")
-
-        # Boolean indexing for gene groups
-        adata.var['mt'] = adata.var_names.str.startswith(mt_prefix)
-        adata.var['ribo'] = adata.var_names.str.startswith(ribo_prefix)
-        # Using regex for hemoglobin
-        adata.var['hb'] = adata.var_names.str.contains(hb_pattern, regex=True)
-
-        # Run QC calculation
-        qc_vars = ['mt', 'ribo', 'hb']
-
-        # cache QC Calculation score
-        # Record the column names before calculation
-        obs_cols_before = set(adata.obs.columns)
-        var_cols_before = set(adata.var.columns)
-
-        calculate_qc_metrics(
-            adata,
-            qc_vars=qc_vars,
-            percent_top=None,
-            log1p=False,
-            inplace=True
-        )
-
-        # Newly added columns = current columns - previous columns
-        obs_new_cols = list(set(adata.obs.columns) - obs_cols_before)
-        var_new_cols = list(set(adata.var.columns) - var_cols_before)
-        logger.debug(f"Incremental columns to cache (Obs): {obs_new_cols}")
-
-        #  Minimal storage Create an AnnData object containing only incremental data
-        try:
-            adata_cache = AnnData(
-                X=None,  # Do not store X
-                obs=adata.obs[obs_new_cols].copy(),  # Store only new obs columns
-                var=adata.var[var_new_cols].copy()  # Store only new var columns
-            )
-
-            # Save cache
-            cache_file_name = f"{dataset_id}_qc_metrics.h5ad"
-            cache_relative_key = get_project_relative(
-                project_id, CACHE_SUBSPACE, cache_file_name
-            )
-            self.storage.save_anndata(adata_cache, cache_relative_key)
-
-        except Exception as e:
-            logger.warning(f"Failed to cache incremental metrics: {e}")
+        self._compute_qc_metrics_inplace(adata, organism, custom_prefix, cache_key)
 
         # Generate & Save UI Data (JSON)
         # Extract columns required for frontend Violin/Scatter plots
@@ -230,87 +167,23 @@ class PreprocessingService:
         # 2. [OPTIMIZED] Try Loading Lightweight Cache & Merge
         cache_file_name = f"{request.dataset_id}_qc_metrics.h5ad"
         cache_key = get_project_relative(request.project_id, CACHE_SUBSPACE, cache_file_name)
+        # Use the generic merge method
+        is_merged = self.storage.load_and_merge_anndata(adata, cache_key)
+        # Verify if critical metrics exist (Business logic validation)
+        metrics_ready = is_merged and ('total_counts' in adata.obs)
 
-        metrics_loaded = False
-
-        try:
-            logger.info(f"Attempting to load QC Metrics Cache: {cache_key}")
-            adata_cache = self.storage.load_anndata(cache_key)
-
-            if not adata.obs_names.equals(adata_cache.obs_names):
-                logger.warning("Cache index mismatch (barcodes differ). Ignoring cache.")
-            else:
-                # Calculate the difference in columns
-                new_obs_cols = adata_cache.obs.columns.difference(adata.obs.columns)
-                new_var_cols = adata_cache.var.columns.difference(adata.var.columns)
-
-                # Safely assign new columns one by one
-                # This avoids "Can only assign pd.DataFrame to obs" error
-                if len(new_obs_cols) > 0:
-                    for col in new_obs_cols:
-                        # Scanpy/Pandas aligns by index automatically here
-                        adata.obs[col] = adata_cache.obs[col]
-
-                if len(new_var_cols) > 0:
-                    for col in new_var_cols:
-                        adata.var[col] = adata_cache.var[col]
-
-                # Verify validity
-                if 'total_counts' in adata.obs:
-                    metrics_loaded = True
-                    logger.info(f"Lightweight Cache Hit! Merged {len(new_obs_cols)} obs columns.")
-                else:
-                    logger.warning("Cache loaded but missing 'total_counts'. Triggering fallback.")
-
-        except FileNotFoundError:
-            logger.info("Cache Miss. Proceeding to fallback.")
-        except Exception as e:
-            # Catching generic error to ensure pipeline robustness
-            logger.error(f"Error merging cache: {e}. Proceeding to fallback.")
-
-        # 3. Fallback: Recalculate Metrics (If cache failed or missing)
-        if not metrics_loaded:
+        # Fallback: Recalculate Metrics (If cache failed or is invalid)
+        if not metrics_ready:
             logger.info("Fallback: Recalculating QC metrics...")
-
-            # Retrieve Project for Organism info
-            # Note: Ensure your DAO has get_project_by_id (checking both PK types if needed)
+            # Retrieve Organism Info
             project = None
             try:
-                # Try fetching by string ID first (Business ID)
                 project = self.project_dao.get_project_by_id(request.project_id)
             except:
                 pass
 
             organism = project.organism if project else "Human"
-
-            # Define Prefixes
-            mt_prefix = "mt-" if organism.lower() == "mouse" else "MT-"
-            hb_pattern = "^Hb[^(p)]" if organism.lower() == "mouse" else "^HB[^(P)]"
-
-            # Annotate
-            adata.var['mt'] = adata.var_names.str.startswith(mt_prefix)
-            adata.var['hb'] = adata.var_names.str.contains(hb_pattern, regex=True)
-
-            # Calculate metrics inplace
-            calculate_qc_metrics(
-                adata,
-                qc_vars=['mt', 'hb'],
-                percent_top=None,
-                log1p=False,
-                inplace=True
-            )
-
-            # Self-Repair: Save to Cache
-            try:
-                logger.info(f"Caching recalculated metrics to: {cache_key}")
-                adata_cache_new = AnnData(
-                    X=None,
-                    obs=adata.obs.copy(),
-                    var=adata.var.copy()
-                )
-                self.storage.save_anndata(adata_cache_new, cache_key)
-            except Exception as e:
-                logger.warning(f"Failed to save fallback cache: {e}")
+            self._compute_qc_metrics_inplace(adata, organism, cache_key)
 
         # 4. Apply Filtering
         initial_cells = adata.n_obs
@@ -366,4 +239,67 @@ class PreprocessingService:
             snapshot_path=saved_path,
             n_obs_remaining=adata.n_obs,
             n_vars_remaining=adata.n_vars
+        )
+
+    # Internal Methods
+    def _compute_qc_metrics_inplace(
+            self,
+            adata: AnnData,
+            organism: str,
+            custom_prefix: Optional[Dict] = None,
+            cache_key: str = ''
+    ) -> None:
+        """
+        Internal helper to determine prefixes based on organism and run scanpy.pp.calculate_qc_metrics.
+        Modifies the AnnData object in-place.
+        """
+        # cache QC Calculation score
+        # Record the column names before calculation
+        obs_cols_before = set(adata.obs.columns)
+        var_cols_before = set(adata.var.columns)
+
+        # 1. Define Defaults
+        mt_prefix = "MT-"
+        ribo_prefix = ("RPS", "RPL")
+        hb_pattern = "^HB[^(P)]"
+
+        # 2. Organism Logic
+        if organism and organism.lower() == "mouse":
+            mt_prefix = "mt-"
+            ribo_prefix = ("Rps", "Rpl")
+            hb_pattern = "^Hb[^(p)]"
+
+        # 3. Custom Overrides
+        if custom_prefix:
+            mt_prefix = custom_prefix.get("mt", mt_prefix)
+            ribo_prefix = tuple(custom_prefix.get("ribo", ribo_prefix))
+            hb_pattern = custom_prefix.get("hb", hb_pattern)
+
+        logger.info(f"Computing QC metrics (Organism: {organism}). Prefixes: MT={mt_prefix}")
+
+        # 4. Annotate Genes
+        adata.var['mt'] = adata.var_names.str.startswith(mt_prefix)
+        adata.var['ribo'] = adata.var_names.str.startswith(ribo_prefix)
+        adata.var['hb'] = adata.var_names.str.contains(hb_pattern, regex=True)
+
+        # 5. Run Scanpy Calculation
+        qc_vars = ['mt', 'ribo', 'hb']
+        calculate_qc_metrics(
+            adata,
+            qc_vars=qc_vars,
+            percent_top=None,
+            log1p=False,
+            inplace=True
+        )
+
+        # Newly added columns = current columns - previous columns
+        obs_new_cols = list(set(adata.obs.columns) - obs_cols_before)
+        var_new_cols = list(set(adata.var.columns) - var_cols_before)
+
+        #  Minimal storage Create an AnnData object containing only incremental data
+        self.storage.save_incremental_anndata(
+            adata_source=adata,
+            obs_cols=obs_new_cols,
+            var_cols=var_new_cols,
+            relative_key=cache_key
         )

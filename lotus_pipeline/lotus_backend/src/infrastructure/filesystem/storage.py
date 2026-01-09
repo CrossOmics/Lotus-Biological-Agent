@@ -1,14 +1,14 @@
 import json
 import pickle
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Optional, List
 
 from anndata import AnnData
 from lotus.io import read_h5ad
 from .constants.filesystem_constants import USER_PROJECT_ROOT
 # Import the singleton instance from the context module
 from ..workspace_context import workspace_path_manager
-
+from loguru import logger
 
 class AssetStorage:
     """
@@ -147,3 +147,101 @@ class AssetStorage:
             raise IOError(f"Failed to save generic file ({relative_key}): {e}")
 
         return Path(relative_key).as_posix()
+
+    def save_incremental_anndata(
+            self,
+            adata_source: AnnData,
+            obs_cols: List[str],
+            var_cols: List[str],
+            relative_key: str
+    ) -> Optional[str]:
+        """
+        Creates and saves a lightweight AnnData object containing only specific
+        obs/var columns (Incremental Cache).
+
+        Note: The X matrix is NOT saved (X=None). Indices are preserved automatically.
+
+        Args:
+            adata_source: The source AnnData object containing the data.
+            obs_cols: List of column names from adata.obs to cache.
+            var_cols: List of column names from adata.var to cache.
+            relative_key: The destination path key.
+
+        Returns:
+            str: The saved path if successful, None otherwise.
+        """
+        try:
+            # Create a lightweight object.
+            # AnnData automatically preserves the index (barcodes/genes),
+            # which is crucial for alignment during merging.
+            adata_cache = AnnData(
+                X=None,
+                obs=adata_source.obs[obs_cols].copy(),
+                var=adata_source.var[var_cols].copy()
+            )
+
+            logger.debug(
+                f"[IO] Saving incremental cache to {relative_key} (Obs: {len(obs_cols)}, Var: {len(var_cols)})")
+            return self.save_anndata(adata_cache, relative_key)
+
+        except Exception as e:
+            logger.warning(f"[IO] Failed to save incremental cache: {e}")
+            return None
+
+    def load_and_merge_anndata(self, adata_target: AnnData, relative_key: str) -> bool:
+        """
+        Loads an incremental cache file and merges its obs/var columns into the target AnnData.
+
+        Strategies:
+        1. Checks Index Alignment (Barcodes/Genes must match).
+        2. Calculates column differences (only merges new or updated columns).
+        3. Assigns columns individually to avoid AnnData structural errors.
+
+        Args:
+            adata_target: The main AnnData object in memory (modified in-place).
+            relative_key: Path to the cache file.
+
+        Returns:
+            bool: True if merge was successful, False if file missing or index mismatch.
+        """
+        try:
+            logger.debug(f"[IO] Attempting to merge cache from: {relative_key}")
+
+            # 1. Load the cache
+            # load_anndata handles path resolution and existence checks internally
+            try:
+                adata_cache = self.load_anndata(relative_key)
+            except FileNotFoundError:
+                logger.debug("[IO] Cache miss (file not found).")
+                return False
+
+            # 2. Safety Check: Index Alignment
+            if not adata_target.obs_names.equals(adata_cache.obs_names):
+                logger.warning(f"[IO] Cache index mismatch (Obs) for {relative_key}. Aborting merge.")
+                return False
+
+            # Note: We usually trust var_names (genes) to be consistent if obs aligns,
+            # but strictly speaking, we could check var_names too.
+
+            # 3. Calculate Delta (Difference)
+            # We only merge columns that exist in cache but not in target (or to update them).
+            new_obs_cols = adata_cache.obs.columns.difference(adata_target.obs.columns)
+            new_var_cols = adata_cache.var.columns.difference(adata_target.var.columns)
+
+            # 4. Safe Merge (Column-by-Column Assignment)
+            # This is the most robust way to update AnnData.obs/var without breaking internal links.
+            if len(new_obs_cols) > 0:
+                for col in new_obs_cols:
+                    adata_target.obs[col] = adata_cache.obs[col]
+
+            if len(new_var_cols) > 0:
+                for col in new_var_cols:
+                    adata_target.var[col] = adata_cache.var[col]
+
+            logger.info(
+                f"[IO] Incremental Merge Success! Added {len(new_obs_cols)} obs cols, {len(new_var_cols)} var cols.")
+            return True
+
+        except Exception as e:
+            logger.warning(f"[IO] Error during incremental merge: {e}")
+            return False

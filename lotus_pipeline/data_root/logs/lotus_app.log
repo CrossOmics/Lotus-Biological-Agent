@@ -1,0 +1,74 @@
+2026-01-03 21:40:13 | SUCCESS  | service.dataset_service:import_dataset_from_local - [Service] Dataset imported successfully. ID: 1
+2026-01-03 21:46:11 | SUCCESS  | service.dataset_service:import_dataset_from_local - [Service] Dataset imported successfully. ID: 2
+2026-01-03 21:47:22 | INFO     | service.dataset_service:import_dataset_from_local - [Service] Inserting dataset record into DB: test1
+2026-01-03 21:47:22 | SUCCESS  | service.dataset_service:import_dataset_from_local - [Service] Dataset imported successfully. ID: 3
+2026-01-03 22:05:23 | SUCCESS  | service.dataset_service:import_dataset_from_local - [Service] Dataset imported successfully. ID: 1
+2026-01-08 21:59:35 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:01:12 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:29:16 | INFO     | service.preprocessing_service:apply_filter - Cache Miss. Proceeding to fallback calculation.
+2026-01-08 22:29:16 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:31:38 | INFO     | service.preprocessing_service:apply_filter - Cache Miss. Proceeding to fallback calculation.
+2026-01-08 22:31:38 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:31:38 | INFO     | service.preprocessing_service:apply_filter - Caching recalculated metrics to: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:31:38 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:31:38 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:32:59 | INFO     | service.preprocessing_service:apply_filter - Attempting to load QC Metrics Cache: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:32:59 | WARNING  | service.preprocessing_service:apply_filter - Cache loaded but missing 'total_counts'. Triggering fallback.
+2026-01-08 22:32:59 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:32:59 | INFO     | service.preprocessing_service:apply_filter - Caching recalculated metrics to: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:32:59 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:32:59 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:34:03 | INFO     | service.preprocessing_service:apply_filter - Attempting to load QC Metrics Cache: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:34:03 | WARNING  | service.preprocessing_service:apply_filter - Cache loaded but missing 'total_counts'. Triggering fallback.
+2026-01-08 22:34:03 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:34:03 | INFO     | service.preprocessing_service:apply_filter - Caching recalculated metrics to: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:34:03 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:34:03 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:39:32 | INFO     | service.preprocessing_service:apply_filter - Cache Miss. Proceeding to fallback.
+2026-01-08 22:39:32 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:39:32 | INFO     | service.preprocessing_service:apply_filter - Using organism: Human
+2026-01-08 22:39:32 | INFO     | service.preprocessing_service:apply_filter - Caching recalculated metrics to: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:39:32 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:39:45 | INFO     | service.preprocessing_service:apply_filter - Attempting to load QC Metrics Cache: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:39:45 | ERROR    | service.preprocessing_service:apply_filter - Error merging cache: Can only assign pd.DataFrame to obs.. Proceeding to fallback.
+2026-01-08 22:39:45 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:39:45 | INFO     | service.preprocessing_service:apply_filter - Using organism: Human
+2026-01-08 22:39:46 | INFO     | service.preprocessing_service:apply_filter - Caching recalculated metrics to: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:39:46 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:42:47 | INFO     | service.preprocessing_service:apply_filter - Lightweight Cache Hit! Merged 6 obs columns.
+2026-01-08 22:42:47 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:42:47 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:44:07 | INFO     | service.preprocessing_service:apply_filter - Attempting to load QC Metrics Cache: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:44:07 | INFO     | service.preprocessing_service:apply_filter - Cache Miss. Proceeding to fallback.
+2026-01-08 22:44:07 | INFO     | service.preprocessing_service:apply_filter - Fallback: Recalculating QC metrics...
+2026-01-08 22:44:07 | INFO     | service.preprocessing_service:apply_filter - Caching recalculated metrics to: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:44:07 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:44:07 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:44:19 | INFO     | service.preprocessing_service:apply_filter - Attempting to load QC Metrics Cache: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:44:19 | INFO     | service.preprocessing_service:apply_filter - Lightweight Cache Hit! Merged 6 obs columns.
+2026-01-08 22:44:19 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:44:19 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 2699
+2026-01-08 22:45:53 | INFO     | service.preprocessing_service:apply_filter - Attempting to load QC Metrics Cache: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 22:45:53 | INFO     | service.preprocessing_service:apply_filter - Lightweight Cache Hit! Merged 6 obs columns.
+2026-01-08 22:45:53 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 22:45:53 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 12
+2026-01-08 23:15:11 | DEBUG    | infrastructure.filesystem.storage:save_incremental_anndata - [IO] Saving incremental cache to projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad (Obs: 8, Var: 7)
+2026-01-08 23:15:30 | DEBUG    | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Attempting to merge cache from: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 23:15:30 | INFO     | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Incremental Merge Success! Added 8 obs cols, 7 var cols.
+2026-01-08 23:15:30 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 23:15:30 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 12
+2026-01-08 23:16:48 | INFO     | service.preprocessing_service:_compute_qc_metrics_inplace - Computing QC metrics (Organism: Human). Prefixes: MT=MT-
+2026-01-08 23:16:48 | DEBUG    | infrastructure.filesystem.storage:save_incremental_anndata - [IO] Saving incremental cache to projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad (Obs: 8, Var: 7)
+2026-01-08 23:17:00 | DEBUG    | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Attempting to merge cache from: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 23:17:00 | INFO     | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Incremental Merge Success! Added 8 obs cols, 7 var cols.
+2026-01-08 23:17:00 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 23:17:00 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 12
+2026-01-08 23:24:44 | DEBUG    | infrastructure.filesystem.storage:save_incremental_anndata - [IO] Saving incremental cache to projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad (Obs: 8, Var: 7)
+2026-01-08 23:24:49 | DEBUG    | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Attempting to merge cache from: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 23:24:49 | INFO     | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Incremental Merge Success! Added 8 obs cols, 7 var cols.
+2026-01-08 23:24:49 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 23:24:49 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 12
+2026-01-08 23:25:24 | DEBUG    | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Attempting to merge cache from: projects/p_1767495922_c912e/cache/ds_20260103_220522_0f5c3_qc_metrics.h5ad
+2026-01-08 23:25:24 | INFO     | infrastructure.filesystem.storage:load_and_merge_anndata - [IO] Incremental Merge Success! Added 8 obs cols, 7 var cols.
+2026-01-08 23:25:24 | INFO     | service.preprocessing_service:apply_filter - Applying filters. Initial cells: 2700
+2026-01-08 23:25:24 | INFO     | service.preprocessing_service:apply_filter - Filtering complete. Remaining cells: 12
