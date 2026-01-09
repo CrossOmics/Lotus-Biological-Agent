@@ -24,7 +24,7 @@ class AnalysisSnapshot(BaseModel):
     Attributes:
         id: Auto-increment primary key
         snapshot_id: Unique business identifier (e.g., snap_20250101_xxxx)
-        dataset_primary_id: Foreign key to the source Dataset
+        dataset_id: Foreign key to the source Dataset
         branch_name: Human-readable name for this analysis branch/step
         params_json: JSON string storing Scanpy parameters used
         thumbnail_json: JSON string mapping visualization keys to file paths
@@ -50,12 +50,14 @@ class AnalysisSnapshot(BaseModel):
     )
 
     # Foreign Keys
-    # Link to the raw dataset (Root of the analysis)
-    dataset_primary_id = ForeignKeyField(
+    # Link to the raw dataset's business id (Root of the analysis)
+    dataset_id = ForeignKeyField(
         Dataset,
+        field='dataset_id',
+        column_name='dataset_id',
         backref='snapshots',
         on_delete='CASCADE',
-        help_text="Reference to the raw dataset"
+        help_text="Reference to the raw dataset business id"
     )
 
     # Metadata
@@ -63,6 +65,10 @@ class AnalysisSnapshot(BaseModel):
         max_length=255,
         null=False,
         help_text="Name of this analysis branch or step (e.g., 'Leiden Res 0.5')"
+    )
+    snapshot_path = TextField(
+        null=False,
+        help_text="Snapshot's relative path key within workspace"
     )
 
     # Scanpy Technical parameters (JSON Field)
@@ -101,7 +107,7 @@ class AnalysisSnapshot(BaseModel):
     class Meta:
         table_name = 'analysis_snapshots'
         indexes = (
-            (('dataset_primary_id', 'create_time'), False),
+            (('dataset_id', 'create_time'), False),
         )
 
     def __repr__(self) -> str:
