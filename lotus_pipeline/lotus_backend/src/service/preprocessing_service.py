@@ -7,9 +7,12 @@ from typing import Optional, Dict
 from anndata import AnnData
 from fastapi import Depends
 
+from dto.request.run_hvg_request import RunHVGRequest
+from dto.response.hvg_result_dto import HVGResultDTO
 from infrastructure.database.dao.analysis_snapshots_dao import AnalysisSnapshotsDAO
 from infrastructure.filesystem.constants.filesystem_constants import QC_SUBSPACE, SNAPSHOTS_SUBSPACE, CACHE_SUBSPACE
-from lotus.preprocessing import calculate_qc_metrics, filter_cells, filter_genes
+import lotus
+from lotus.preprocessing import calculate_qc_metrics, filter_cells, filter_genes, normalize_total, log1p, scale
 from lotus.visualization import violin, scatter
 from infrastructure.database.dao.project_meta_dao import ProjectMetaDAO
 
@@ -302,4 +305,127 @@ class PreprocessingService:
             obs_cols=obs_new_cols,
             var_cols=var_new_cols,
             relative_key=cache_key
+        )
+
+    def apply_hvg(self, request: RunHVGRequest) -> HVGResultDTO:
+        """
+        Executes Feature Selection & Scaling (Normalization -> HVG -> Scale).
+
+        The flow follows the standard Scanpy "Golden Order":
+        1. Normalize & Log1p.
+        2. Identify Highly Variable Genes (HVG).
+        3. Backup 'raw' state (normalized, full gene set) for DE analysis.
+        4. Subset to HVGs and Scale (Z-score) for PCA/Clustering.
+        """
+
+        # Resolve Source Data Path
+        # Logic: If source_snapshot_id is provided, use it.
+        # Otherwise, find the latest "QC Filtered" snapshot from DB.
+        source_path = None
+
+        if request.source_snapshot_id:
+            snapshot = self.snapshot_dao.get_snapshot_by_business_id(request.source_snapshot_id)
+            if not snapshot:
+                raise ValueError(f"Source snapshot {request.source_snapshot_id} not found.")
+            source_path = snapshot.snapshot_path
+        else:
+            # Auto-find latest QC snapshot
+            latest_qc = self.snapshot_dao.get_latest_snapshot(
+                request.dataset_id, branch_name="QC Filtered"
+            )
+            if not latest_qc:
+                raise ValueError("No QC snapshot found. Please provide source_snapshot_id.")
+            source_path = latest_qc.snapshot_path
+
+        # Load Data
+        try:
+            adata = self.storage.load_anndata(source_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load source file: {e}")
+
+        # Normalization & Log1p
+        logger.info("Step A: Normalizing and Log-transforming...")
+
+        # Safety check: Ensure raw counts are preserved in layers if not already
+        if 'counts' not in adata.layers:
+            adata.layers['counts'] = adata.X.copy()
+
+        # Normalize total counts per cell (default 1e4)
+        normalize_total(adata, target_sum=request.target_sum)
+
+        # Logarithmize the data (log(x+1))
+        log1p(adata)
+
+        # Identify Highly Variable Genes (HVG)
+        logger.info(f"Step B: Identifying top {request.n_top_genes} HVGs...")
+
+        lotus.preprocessing.highly_variable_genes(
+            adata,
+            n_top_genes=request.n_top_genes,
+            flavor=request.flavor,
+            subset=False
+        )
+
+        # Visualization (Dispersion Plot)
+        # Generate the plot
+        lotus.visualization.highly_variable_genes(adata, show=False)
+        fig = plt.gcf()
+
+        # Save plot to storage
+        plot_filename = "hvg_dispersion.pdf"
+        hvg_plot_path = self.storage.save_file(
+            fig,
+            get_project_relative(request.project_id, QC_SUBSPACE, plot_filename)
+        )
+        plt.close(fig)
+
+        # Backup Raw
+        # We freeze the "Normalized + Full Gene" state into .raw
+        # This is required for future Differential Expression (DE) analysis
+        logger.info("Step D: Backing up full normalized data to .raw...")
+        adata.raw = adata
+
+        # Step E: Subset & Scale
+        logger.info("Step E: Subsetting to HVGs and Scaling...")
+
+        # 1. Physical subset: Keep only HVGs in X
+        adata = adata[:, adata.var.highly_variable]
+
+        # 2. Scale: Z-score normalization (make mean=0, std=1)
+        # Note: This introduces negative numbers
+        scale(adata, max_value=10)
+
+        # Persistence (Snapshot)
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_suffix = uuid.uuid4().hex[:4]
+        snapshot_id = f"snap_{timestamp_str}_{unique_suffix}"
+
+        # Save the processed AnnData (PCA Ready)
+        file_name = f"node_hvg_snap_{snapshot_id}.h5ad"
+        relative_key = get_project_relative(request.project_id, SNAPSHOTS_SUBSPACE, file_name)
+
+        try:
+            saved_path = self.storage.save_anndata(adata, relative_key)
+        except Exception as e:
+            raise RuntimeError(f"Failed to save snapshot: {e}")
+
+        # Create DB Record
+        n_genes = int(sum(adata.var['highly_variable'])) if 'highly_variable' in adata.var else adata.n_vars
+
+        # TODO: parent_snapshot_id=request.source_snapshot_id,  # Link lineage and change the snapshot schema
+        self.snapshot_dao.create_snapshot(
+            dataset_id=request.dataset_id,
+            snapshot_id=snapshot_id,
+            branch_name="HVG Selected",
+            snapshot_path=saved_path,
+            params_json=request.model_dump(),
+            user_notes=f"Selected {n_genes} HVGs via {request.flavor}."
+        )
+
+        return HVGResultDTO(
+            snapshot_id=snapshot_id,
+            snapshot_path=saved_path,
+            hvg_plot_path=hvg_plot_path,
+            n_genes_found=adata.n_vars,  # Should be equal to n_top_genes
+            msg="HVG selection and scaling complete."
         )

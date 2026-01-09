@@ -7,9 +7,35 @@ from ..model.dataset_model import Dataset
 
 
 class AnalysisSnapshotsDAO:
+    def __init__(self):
+        pass
     """
     Data Access Object (DAO) for managing AnalysisSnapshot database operations.
     """
+    @staticmethod
+    def get_latest_snapshot(dataset_id: str, branch_name: str) -> Optional[AnalysisSnapshot]:
+        """
+        Retrieves the most recently created snapshot for a specific dataset and branch.
+
+        Args:
+            dataset_id: The business ID of the dataset.
+            branch_name: The specific branch/step name to filter by (e.g., 'QC Filtered').
+
+        Returns:
+            The latest AnalysisSnapshot object, or None if no match found.
+        """
+        try:
+            return (AnalysisSnapshot
+                    .select()
+                    .where(
+                (AnalysisSnapshot.dataset_id == dataset_id) &
+                (AnalysisSnapshot.branch_name == branch_name)
+            )
+                    .order_by(AnalysisSnapshot.create_time.desc())  # Newest first
+                    .first())
+        except Exception as e:
+            print(f"[DB Error] Error fetching latest snapshot: {e}")
+            return None
 
     @staticmethod
     def create_snapshot(
@@ -126,3 +152,5 @@ class AnalysisSnapshotsDAO:
         except Exception as e:
             print(f"[Error] Failed to batch delete snapshots: {e}")
             return 0
+
+

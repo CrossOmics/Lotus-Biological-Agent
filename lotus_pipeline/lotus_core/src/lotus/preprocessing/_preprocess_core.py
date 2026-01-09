@@ -120,7 +120,7 @@ def run_preprocessing(
                 print(f"Filtered {n_before - adata.n_obs} cells with {pct_mt_key} >= {pct_mt_max}")
 
     # 5. Normalize total counts and apply log1p
-    normalization(adata, target_sum=target_sum, inplace=True)
+    normalize_total(adata, target_sum=target_sum, inplace=True)
     log1p(adata)
 
     # Save the normalized, log-transformed data to adata.raw (Standard Scanpy Workflow)
@@ -363,7 +363,7 @@ def highly_variable_genes(
     )
 
 
-def normalization(
+def normalize_total(
         adata: AnnData,
         *,
         target_sum: float | None = None,

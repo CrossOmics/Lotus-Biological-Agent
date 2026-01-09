@@ -17,7 +17,7 @@ from ._preprocess_core import (
     scrublet_simulate_doublets,
 
     # Normalization & Transformation
-    normalization,
+    normalize_total,
     log1p,
     scale,
 
@@ -52,7 +52,7 @@ __all__ = [
     "scrublet_simulate_doublets",
 
     # Normalization & Transformation
-    "normalization",
+    "normalize_total",
     "log1p",
     "scale",
 

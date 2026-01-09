@@ -81,3 +81,65 @@ def test_qc_filter():
     except requests.exceptions.ConnectionError:
         print("[Error] Cannot connect to server. Is uvicorn running?")
 
+
+def test_hvg_process():
+    """
+    Step 3: Test HVG Selection & Scaling.
+
+    This test verifies:
+    1. Automatic discovery of the latest 'QC Filtered' snapshot (since we don't provide source_snapshot_id).
+    2. Correct execution of Normalize -> Log1p -> HVG -> Scale.
+    3. Generation of the dispersion plot and a new snapshot.
+    """
+    print("HVG Selection & Scaling")
+
+    url = f"{BASE_URL}/hvg"
+
+    # Payload matching RunHVGRequest DTO
+    # Note: 'source_snapshot_id' is deliberately OMITTED to test auto-discovery logic.
+    payload = {
+        "project_id": TEST_PROJECT_ID,
+        "dataset_id": TEST_DATASET_ID,
+        "n_top_genes": 2000,
+        "flavor": "seurat",
+        "target_sum": 1e4
+    }
+
+    print(f"POST {url}")
+    print("Payload Config (Auto-find source snapshot):")
+    print(json.dumps(payload, indent=2))
+
+    try:
+        response = requests.post(url, json=payload)
+
+        # We expect 201 Created
+        if response.status_code == 201:
+            data = response.json()
+            print("\n[Success] HVG & Scaling Completed!")
+            print("-" * 30)
+            print(f"Snapshot ID:       {data['snapshot_id']}")
+            print(f"Saved Path:        {data['snapshot_path']}")
+            print(f"HVG Plot Path:     {data['hvg_plot_path']}")
+            print(f"Genes Found:       {data['n_genes_found']}")
+            print(f"Message:           {data['msg']}")
+
+            # Logic Check
+            if data['n_genes_found'] != payload['n_top_genes']:
+                print(f"\n[Warning] Requested {payload['n_top_genes']} genes but got {data['n_genes_found']}.")
+
+        elif response.status_code == 404:
+            print(f"\n[Failed] 404 Not Found")
+            print("Server Message:", response.json().get('detail'))
+            print("Tip: Did you run 'test_qc_filter' first to generate a QC snapshot?")
+
+        elif response.status_code == 500:
+            print(f"\n[Failed] 500 Internal Error")
+            print("Error Details:", response.text)
+
+        else:
+            print(f"\n[Failed] Status Code: {response.status_code}")
+            print("Response:", response.text)
+
+    except requests.exceptions.ConnectionError:
+        print(f"\n[Error] Could not connect to backend at {url}")
+        print("Is the server running on port 8888?")
