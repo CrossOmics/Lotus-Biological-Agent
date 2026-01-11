@@ -92,3 +92,427 @@
 2026-01-11 10:41:34 | INFO     | service.preprocessing_service:apply_hvg - Step B: Identifying top 2000 HVGs...
 2026-01-11 10:41:34 | INFO     | service.preprocessing_service:apply_hvg - Step D: Backing up full normalized data to .raw...
 2026-01-11 10:41:34 | INFO     | service.preprocessing_service:apply_hvg - Step E: Subsetting to HVGs and Scaling...
+2026-01-11 12:05:08 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - Unexpected error during PCA execution
+Traceback (most recent call last):
+
+  File "<string>", line 1, in <module>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\spawn.py", line 116, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+               │     │   └ 336
+               │     └ 3
+               └ <function _main at 0x000002377FAA7640>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\spawn.py", line 129, in _main
+    return self._bootstrap(parent_sentinel)
+           │    │          └ 336
+           │    └ <function BaseProcess._bootstrap at 0x000002377FA8A830>
+           └ <SpawnProcess name='SpawnProcess-1' parent=45448 started>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+    │    └ <function BaseProcess.run at 0x000002377FA89EA0>
+    └ <SpawnProcess name='SpawnProcess-1' parent=45448 started>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    │    │        │    │        │    └ {'config': <uvicorn.config.Config object at 0x000002377FAA0880>, 'target': <bound method Server.run of <uvicorn.server.Server...
+    │    │        │    │        └ <SpawnProcess name='SpawnProcess-1' parent=45448 started>
+    │    │        │    └ ()
+    │    │        └ <SpawnProcess name='SpawnProcess-1' parent=45448 started>
+    │    └ <function subprocess_started at 0x000002377FD47910>
+    └ <SpawnProcess name='SpawnProcess-1' parent=45448 started>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    │              └ [<socket.socket fd=3804, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 8888)>]
+    └ <bound method Server.run of <uvicorn.server.Server object at 0x000002377FAA1720>>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\server.py", line 65, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           │       │   │    │             └ [<socket.socket fd=3804, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 8888)>]
+           │       │   │    └ <function Server.serve at 0x000002377FD443A0>
+           │       │   └ <uvicorn.server.Server object at 0x000002377FAA1720>
+           │       └ <function run at 0x000002377FAD0790>
+           └ <module 'asyncio' from 'C:\\Users\\tonyl\\anaconda3\\envs\\lotus_env\\lib\\asyncio\\__init__.py'>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\runners.py", line 44, in run
+    return loop.run_until_complete(main)
+           │    │                  └ <coroutine object Server.serve at 0x00000237018D54D0>
+           │    └ <function BaseEventLoop.run_until_complete at 0x000002377FB685E0>
+           └ <_WindowsSelectorEventLoop running=True closed=False debug=False>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\base_events.py", line 636, in run_until_complete
+    self.run_forever()
+    │    └ <function BaseEventLoop.run_forever at 0x000002377FB68550>
+    └ <_WindowsSelectorEventLoop running=True closed=False debug=False>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\base_events.py", line 603, in run_forever
+    self._run_once()
+    │    └ <function BaseEventLoop._run_once at 0x000002377FB6A050>
+    └ <_WindowsSelectorEventLoop running=True closed=False debug=False>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\base_events.py", line 1909, in _run_once
+    handle._run()
+    │      └ <function Handle._run at 0x000002377FB0D120>
+    └ <Handle Task.task_wakeup(<Future finis...02373958E650>>)>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+    │    │            │    │           │    └ <member '_args' of 'Handle' objects>
+    │    │            │    │           └ <Handle Task.task_wakeup(<Future finis...02373958E650>>)>
+    │    │            │    └ <member '_callback' of 'Handle' objects>
+    │    │            └ <Handle Task.task_wakeup(<Future finis...02373958E650>>)>
+    │    └ <member '_context' of 'Handle' objects>
+    └ <Handle Task.task_wakeup(<Future finis...02373958E650>>)>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 396, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+                   └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x0000023701990C10>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\middleware\proxy_headers.py", line 70, in __call__
+    return await self.app(scope, receive, send)
+                 │    │   │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958CB50>>
+                 │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+                 │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+                 │    └ <fastapi.applications.FastAPI object at 0x000002373959F6D0>
+                 └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x0000023701990C10>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+                           │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958CB50>>
+                           │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+                           └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958CB50>>
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x00000237394D9CC0>
+          └ <fastapi.applications.FastAPI object at 0x000002373959F6D0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x000002373BED79A0>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <starlette.middleware.cors.CORSMiddleware object at 0x00000237394D8520>
+          └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x00000237394D9CC0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\middleware\cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x000002373BED79A0>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x00000237394D9F60>
+          └ <starlette.middleware.cors.CORSMiddleware object at 0x00000237394D8520>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+          │                            │    │    │     │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x000002373BED79A0>
+          │                            │    │    │     │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │                            │    │    │     └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │                            │    │    └ <starlette.requests.Request object at 0x000002373958C460>
+          │                            │    └ <fastapi.routing.APIRouter object at 0x000002373959D9F0>
+          │                            └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x00000237394D9F60>
+          └ <function wrap_app_handling_exceptions at 0x000002370178AF80>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\_exception_handler.py", line 51, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002373BED6A70>
+          │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          └ <fastapi.routing.APIRouter object at 0x000002373959D9F0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002373BED6A70>
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <bound method Router.app of <fastapi.routing.APIRouter object at 0x000002373959D9F0>>
+          └ <fastapi.routing.APIRouter object at 0x000002373959D9F0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002373BED6A70>
+          │     │      │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │     │      └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │     └ <function Route.handle at 0x00000237017B45E0>
+          └ APIRoute(path='/api/v1/dim-reduction/pca', name='run_pca_analysis', methods=['POST'])
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002373BED6A70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <function request_response.<locals>.app at 0x000002373BED7400>
+          └ APIRoute(path='/api/v1/dim-reduction/pca', name='run_pca_analysis', methods=['POST'])
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+          │                            │    │        │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002373BED6A70>
+          │                            │    │        │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │                            │    │        └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │                            │    └ <starlette.requests.Request object at 0x000002373958FEE0>
+          │                            └ <function request_response.<locals>.app.<locals>.app at 0x000002373BED6EF0>
+          └ <function wrap_app_handling_exceptions at 0x000002370178AF80>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\_exception_handler.py", line 51, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002373BED6950>
+          │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x000002373958C...
+          │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          └ <function request_response.<locals>.app.<locals>.app at 0x000002373BED6EF0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+                     │ └ <starlette.requests.Request object at 0x000002373958FEE0>
+                     └ <function get_request_handler.<locals>.app at 0x000002373BED71C0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x00000237017B60E0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'service': <service.dim_reduction_service.DimReductionService object at 0x000002373958E650>, 'request': RunPCARequest(projec...
+                 │         └ <function run_pca_analysis at 0x000002370198ECB0>
+                 └ Dependant(path_params=[], query_params=[], header_params=[], cookie_params=[], body_params=[ModelField(field_info=Body(Pydant...
+
+> File "D:\OneDrive - Brown University\Learning\Y6\Bio Agent\Project\Lotus-Biological-Agent\lotus_pipeline\lotus_backend\src\controller\dim_reduction_controller.py", line 34, in run_pca_analysis
+    result = service.run_pca(request)
+             │       │       └ RunPCARequest(project_id='p_1767495922_c912e', dataset_id='ds_20260103_220522_0f5c3', source_snapshot_id=None, n_comps=50, sv...
+             │       └ <function DimReductionService.run_pca at 0x000002373BE53F40>
+             └ <service.dim_reduction_service.DimReductionService object at 0x000002373958E650>
+
+  File "D:\OneDrive - Brown University\Learning\Y6\Bio Agent\Project\Lotus-Biological-Agent\lotus_pipeline\lotus_backend\src\service\dim_reduction_service.py", line 45, in run_pca
+    source_snapshot = resolve_source_snapshot(
+                      └ <function resolve_source_snapshot at 0x000002373BE53D90>
+
+TypeError: resolve_source_snapshot() missing 1 required positional argument: 'snapshot_id'
+2026-01-11 12:08:29 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - PCA validation error: n_components=50 must be between 1 and min(n_samples, n_features)=12 with svd_solver='arpack'
+2026-01-11 12:12:41 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - PCA validation error: n_components=50 must be between 1 and min(n_samples, n_features)=12 with svd_solver='arpack'
+2026-01-11 12:17:13 | WARNING  | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 11.
+2026-01-11 12:17:13 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - PCA validation error: n_components=50 must be between 1 and min(n_samples, n_features)=12 with svd_solver='arpack'
+2026-01-11 12:20:07 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 12.
+2026-01-11 12:20:07 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - PCA validation error: n_components=50 must be between 1 and min(n_samples, n_features)=12 with svd_solver='arpack'
+2026-01-11 12:21:18 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 12.
+2026-01-11 12:21:18 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - PCA validation error: n_components=12 must be strictly less than min(n_samples, n_features)=12 with svd_solver='arpack'
+2026-01-11 12:22:40 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 11.
+2026-01-11 12:22:40 | ERROR    | controller.dim_reduction_controller:run_pca_analysis - Unexpected error during PCA execution
+Traceback (most recent call last):
+
+  File "<string>", line 1, in <module>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\spawn.py", line 116, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+               │     │   └ 332
+               │     └ 3
+               └ <function _main at 0x000002029A187640>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\spawn.py", line 129, in _main
+    return self._bootstrap(parent_sentinel)
+           │    │          └ 332
+           │    └ <function BaseProcess._bootstrap at 0x000002029A16A830>
+           └ <SpawnProcess name='SpawnProcess-1' parent=49796 started>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+    │    └ <function BaseProcess.run at 0x000002029A169EA0>
+    └ <SpawnProcess name='SpawnProcess-1' parent=49796 started>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    │    │        │    │        │    └ {'config': <uvicorn.config.Config object at 0x000002029A180880>, 'target': <bound method Server.run of <uvicorn.server.Server...
+    │    │        │    │        └ <SpawnProcess name='SpawnProcess-1' parent=49796 started>
+    │    │        │    └ ()
+    │    │        └ <SpawnProcess name='SpawnProcess-1' parent=49796 started>
+    │    └ <function subprocess_started at 0x000002029A427910>
+    └ <SpawnProcess name='SpawnProcess-1' parent=49796 started>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    │              └ [<socket.socket fd=1892, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 8888)>]
+    └ <bound method Server.run of <uvicorn.server.Server object at 0x000002029A181720>>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\server.py", line 65, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           │       │   │    │             └ [<socket.socket fd=1892, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 8888)>]
+           │       │   │    └ <function Server.serve at 0x000002029A4243A0>
+           │       │   └ <uvicorn.server.Server object at 0x000002029A181720>
+           │       └ <function run at 0x000002029A1B0790>
+           └ <module 'asyncio' from 'C:\\Users\\tonyl\\anaconda3\\envs\\lotus_env\\lib\\asyncio\\__init__.py'>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\runners.py", line 44, in run
+    return loop.run_until_complete(main)
+           │    │                  └ <coroutine object Server.serve at 0x000002029AEE76F0>
+           │    └ <function BaseEventLoop.run_until_complete at 0x000002029A2485E0>
+           └ <_WindowsSelectorEventLoop running=True closed=False debug=False>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\base_events.py", line 636, in run_until_complete
+    self.run_forever()
+    │    └ <function BaseEventLoop.run_forever at 0x000002029A248550>
+    └ <_WindowsSelectorEventLoop running=True closed=False debug=False>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\base_events.py", line 603, in run_forever
+    self._run_once()
+    │    └ <function BaseEventLoop._run_once at 0x000002029A24A050>
+    └ <_WindowsSelectorEventLoop running=True closed=False debug=False>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\base_events.py", line 1909, in _run_once
+    handle._run()
+    │      └ <function Handle._run at 0x000002029A1ED120>
+    └ <Handle Task.task_wakeup(<Future finis...0202D2CA7EE0>>)>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+    │    │            │    │           │    └ <member '_args' of 'Handle' objects>
+    │    │            │    │           └ <Handle Task.task_wakeup(<Future finis...0202D2CA7EE0>>)>
+    │    │            │    └ <member '_callback' of 'Handle' objects>
+    │    │            └ <Handle Task.task_wakeup(<Future finis...0202D2CA7EE0>>)>
+    │    └ <member '_context' of 'Handle' objects>
+    └ <Handle Task.task_wakeup(<Future finis...0202D2CA7EE0>>)>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 396, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+                   └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x000002029AFA0C10>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\uvicorn\middleware\proxy_headers.py", line 70, in __call__
+    return await self.app(scope, receive, send)
+                 │    │   │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA40A0>>
+                 │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+                 │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+                 │    └ <fastapi.applications.FastAPI object at 0x00000202D2CAD8A0>
+                 └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x000002029AFA0C10>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+                           │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA40A0>>
+                           │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+                           └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA40A0>>
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x00000202D2BEED10>
+          └ <fastapi.applications.FastAPI object at 0x00000202D2CAD8A0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x00000202D55E2A70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <starlette.middleware.cors.CORSMiddleware object at 0x00000202D2BEE890>
+          └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x00000202D2BEED10>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\middleware\cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x00000202D55E2A70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x00000202D2BED990>
+          └ <starlette.middleware.cors.CORSMiddleware object at 0x00000202D2BEE890>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+          │                            │    │    │     │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x00000202D55E2A70>
+          │                            │    │    │     │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │                            │    │    │     └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │                            │    │    └ <starlette.requests.Request object at 0x00000202D2CA7C10>
+          │                            │    └ <fastapi.routing.APIRouter object at 0x00000202D2CADF60>
+          │                            └ <starlette.middleware.exceptions.ExceptionMiddleware object at 0x00000202D2BED990>
+          └ <function wrap_app_handling_exceptions at 0x000002029814EF80>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\_exception_handler.py", line 51, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000202D55E2F80>
+          │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          └ <fastapi.routing.APIRouter object at 0x00000202D2CADF60>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000202D55E2F80>
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <bound method Router.app of <fastapi.routing.APIRouter object at 0x00000202D2CADF60>>
+          └ <fastapi.routing.APIRouter object at 0x00000202D2CADF60>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000202D55E2F80>
+          │     │      │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │     │      └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │     └ <function Route.handle at 0x00000202981745E0>
+          └ APIRoute(path='/api/v1/dim-reduction/pca', name='run_pca_analysis', methods=['POST'])
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000202D55E2F80>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │    └ <function request_response.<locals>.app at 0x00000202D55E3370>
+          └ APIRoute(path='/api/v1/dim-reduction/pca', name='run_pca_analysis', methods=['POST'])
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+          │                            │    │        │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000202D55E2F80>
+          │                            │    │        │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │                            │    │        └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          │                            │    └ <starlette.requests.Request object at 0x00000202D2CA7700>
+          │                            └ <function request_response.<locals>.app.<locals>.app at 0x00000202D55E2950>
+          └ <function wrap_app_handling_exceptions at 0x000002029814EF80>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\_exception_handler.py", line 51, in wrapped_app
+    await app(scope, receive, sender)
+          │   │      │        └ <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x00000202D55E30A0>
+          │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.h11_impl.RequestResponseCycle object at 0x00000202D2CA4...
+          │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.4'}, 'http_version': '1.1', 'server': ('127.0.0.1', 8888), 'cl...
+          └ <function request_response.<locals>.app.<locals>.app at 0x00000202D55E2950>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+                     │ └ <starlette.requests.Request object at 0x00000202D2CA7700>
+                     └ <function get_request_handler.<locals>.app at 0x00000202D55E3130>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x00000202981760E0>
+
+  File "C:\Users\tonyl\anaconda3\envs\lotus_env\lib\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'service': <service.dim_reduction_service.DimReductionService object at 0x00000202D2CA7EE0>, 'request': RunPCARequest(projec...
+                 │         └ <function run_pca_analysis at 0x000002029AF9ECB0>
+                 └ Dependant(path_params=[], query_params=[], header_params=[], cookie_params=[], body_params=[ModelField(field_info=Body(Pydant...
+
+> File "D:\OneDrive - Brown University\Learning\Y6\Bio Agent\Project\Lotus-Biological-Agent\lotus_pipeline\lotus_backend\src\controller\dim_reduction_controller.py", line 34, in run_pca_analysis
+    result = service.run_pca(request)
+             │       │       └ RunPCARequest(project_id='p_1767495922_c912e', dataset_id='ds_20260103_220522_0f5c3', source_snapshot_id=None, n_comps=50, sv...
+             │       └ <function DimReductionService.run_pca at 0x00000202D5563EB0>
+             └ <service.dim_reduction_service.DimReductionService object at 0x00000202D2CA7EE0>
+
+  File "D:\OneDrive - Brown University\Learning\Y6\Bio Agent\Project\Lotus-Biological-Agent\lotus_pipeline\lotus_backend\src\service\dim_reduction_service.py", line 91, in run_pca
+    visualization.pca_scatter(adata, show=False)
+    │                         └ AnnData object with n_obs × n_vars = 12 × 2169
+    │                               obs: 'pct_counts_mt', 'total_counts_hb', 'n_genes_by_counts', 'pct_counts_...
+    └ <module 'lotus.visualization' from 'D:\\OneDrive - Brown University\\Learning\\Y6\\Bio Agent\\Project\\Lotus-Biological-Agent...
+
+AttributeError: module 'lotus.visualization' has no attribute 'pca_scatter'
+2026-01-11 12:36:48 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 11.
+2026-01-11 12:38:38 | INFO     | controller.dim_reduction_controller:run_pca_analysis - Starting PCA for project: p_1767495922_c912e, dataset: ds_20260103_220522_0f5c3
+2026-01-11 12:38:38 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 11.
+2026-01-11 12:39:14 | INFO     | controller.dim_reduction_controller:run_pca_analysis - Starting PCA for project: p_1767495922_c912e, dataset: ds_20260103_220522_0f5c3
+2026-01-11 12:39:14 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 11.
+2026-01-11 12:40:08 | INFO     | controller.dim_reduction_controller:run_pca_analysis - Starting PCA for project: p_1767495922_c912e, dataset: ds_20260103_220522_0f5c3
+2026-01-11 12:40:08 | INFO     | service.dim_reduction_service:run_pca - Requested 50 PCs, but data dims are (12, 2169). Auto-adjusting n_comps to 11.
+2026-01-11 12:41:53 | INFO     | controller.dim_reduction_controller:build_neighborhood_graph - Building neighbors graph for project: p_1767495922_c912e using 30 PCs
+2026-01-11 12:41:53 | ERROR    | controller.dim_reduction_controller:build_neighborhood_graph - Neighbors graph validation error: `X_pca` does not have enough PCs. Rerun `sc.pp.pca` with adjusted `n_comps`.
+2026-01-11 12:48:11 | WARNING  | service.dim_reduction_service:build_neighborhood_graph - Requested 15 neighbors, but only have 12 cells. Auto-adjusting n_neighbors to 11.
+2026-01-11 12:48:11 | ERROR    | controller.dim_reduction_controller:build_neighborhood_graph - Neighbors graph validation error: `X_pca` does not have enough PCs. Rerun `sc.pp.pca` with adjusted `n_comps`.
+2026-01-11 12:48:49 | INFO     | controller.dim_reduction_controller:build_neighborhood_graph - Building neighbors graph for project: p_1767495922_c912e using 30 PCs
+2026-01-11 12:48:49 | ERROR    | controller.dim_reduction_controller:build_neighborhood_graph - Neighbors graph validation error: `X_pca` does not have enough PCs. Rerun `sc.pp.pca` with adjusted `n_comps`.
+2026-01-11 12:52:14 | WARNING  | service.dim_reduction_service:build_neighborhood_graph - Requested 30 PCs, but only 11 PCs available. Auto-adjusting n_pcs to 11.
+2026-01-11 12:53:12 | WARNING  | service.dim_reduction_service:build_neighborhood_graph - Requested 30 PCs, but only 11 PCs available. Auto-adjusting n_pcs to 11.
