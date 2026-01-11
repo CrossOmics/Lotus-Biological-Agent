@@ -218,6 +218,7 @@ class PreprocessingService:
         relative_key = get_project_relative(request.project_id, SNAPSHOTS_SUBSPACE, file_name)
 
         try:
+            # save the whole anndata after QC Filter
             saved_path = self.storage.save_anndata(adata, relative_key)
         except Exception as e:
             raise RuntimeError(f"Failed to save snapshot to storage: {str(e)}")
@@ -416,7 +417,6 @@ class PreprocessingService:
         # Create DB Record
         n_genes = int(sum(adata.var['highly_variable'])) if 'highly_variable' in adata.var else adata.n_vars
 
-        # TODO: parent_snapshot_id=request.source_snapshot_id,  # Link lineage and change the snapshot schema
         self.snapshot_dao.create_snapshot(
             dataset_id=request.dataset_id,
             snapshot_id=snapshot_id,
