@@ -321,12 +321,14 @@ class PreprocessingService:
         # Resolve Source Data Path
         # Logic: If source_snapshot_id is provided, use it.
         # Otherwise, find the latest "QC Filtered" snapshot from DB.
-        source_path = None
 
+        source_path = None
+        hint_message = "Please run QC calculation and QC filtering before proceeding to the Highly Variable Genes step."
         if request.source_snapshot_id:
             snapshot = self.snapshot_dao.get_snapshot_by_business_id(request.source_snapshot_id)
             if not snapshot:
-                raise ValueError(f"Source snapshot {request.source_snapshot_id} not found.")
+                raise ValueError(
+                    f"Source snapshot {request.source_snapshot_id} is missing. {hint_message}")
             source_path = snapshot.snapshot_path
         else:
             # Auto-find latest QC snapshot
@@ -334,8 +336,10 @@ class PreprocessingService:
                 request.dataset_id, branch_name="QC Filtered"
             )
             if not latest_qc:
-                raise ValueError("No QC snapshot found. Please provide source_snapshot_id.")
+                raise ValueError(f"No QC snapshot found. Please provide source_snapshot_id. {hint_message}")
             source_path = latest_qc.snapshot_path
+            # Update the source snapshot id
+            request.source_snapshot_id = latest_qc.snapshot_id
 
         # Load Data
         try:
@@ -418,6 +422,7 @@ class PreprocessingService:
             snapshot_id=snapshot_id,
             branch_name="HVG Selected",
             snapshot_path=saved_path,
+            parent_snapshot_id=request.source_snapshot_id,
             params_json=request.model_dump(),
             user_notes=f"Selected {n_genes} HVGs via {request.flavor}."
         )

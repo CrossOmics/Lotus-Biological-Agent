@@ -9,9 +9,11 @@ from ..model.dataset_model import Dataset
 class AnalysisSnapshotsDAO:
     def __init__(self):
         pass
+
     """
     Data Access Object (DAO) for managing AnalysisSnapshot database operations.
     """
+
     @staticmethod
     def get_latest_snapshot(dataset_id: str, branch_name: str) -> Optional[AnalysisSnapshot]:
         """
@@ -43,6 +45,7 @@ class AnalysisSnapshotsDAO:
             snapshot_id: str,
             branch_name: str,
             snapshot_path: str,
+            parent_snapshot_id: Optional[str] = None,
             params_json: Optional[Dict[str, Any]] = None,
             thumbnail_json: Optional[Dict[str, Any]] = None,
             user_notes: Optional[str] = None
@@ -56,6 +59,7 @@ class AnalysisSnapshotsDAO:
                 snapshot_id=snapshot_id,
                 branch_name=branch_name,
                 snapshot_path=snapshot_path,
+                parent_snapshot_id=parent_snapshot_id,
                 params_json=params_json or {},
                 thumbnail_json=thumbnail_json or {},
                 user_notes=user_notes,
@@ -68,8 +72,6 @@ class AnalysisSnapshotsDAO:
         except Exception as e:
             print(f"[Error] Unexpected error creating snapshot: {e}")
             return None
-
-    # ... (Rest of the methods: get_snapshot_by_id, get_snapshot_by_business_id, etc. remain unchanged)
 
     @staticmethod
     def get_snapshot_by_id(pk_id: int) -> Optional[AnalysisSnapshot]:
@@ -153,4 +155,50 @@ class AnalysisSnapshotsDAO:
             print(f"[Error] Failed to batch delete snapshots: {e}")
             return 0
 
+    @staticmethod
+    def get_snapshot_lineage_by_dataset(dataset_id: str) -> List[Dict[str, str]]:
+        """
+        Retrieves the structural relationship (ID and Parent ID) for all snapshots
+        in a dataset.
 
+        dataset_id: The business ID of the dataset.
+
+        returns: A list of dictionaries, e.g.:
+            [
+                {'snapshot_id': 'snap_1', 'parent_snapshot_id': None, 'branch_name': 'QC'},
+                {'snapshot_id': 'snap_2', 'parent_snapshot_id': 'snap_1', 'branch_name': 'HVG'}
+            ]
+        """
+        try:
+            # We use .dicts() to return a lightweight dictionary instead of Model objects
+            # limiting columns to only what's needed for tree construction.
+            query = (AnalysisSnapshot
+                     .select(
+                AnalysisSnapshot.snapshot_id,
+                AnalysisSnapshot.parent_snapshot_id,
+                AnalysisSnapshot.branch_name,
+                AnalysisSnapshot.create_time
+            )
+                     .where(AnalysisSnapshot.dataset_id == dataset_id)
+                     .order_by(AnalysisSnapshot.create_time.asc())  # Ordered by time for logic
+                     .dicts())
+
+            return list(query)
+        except Exception as e:
+            print(f"[Error] Failed to retrieve lineage for dataset {dataset_id}: {e}")
+            return []
+
+    @staticmethod
+    def get_parent_id_by_snapshot(snapshot_id: str) -> Optional[str]:
+        """
+        Helper to get just the parent ID for a specific snapshot.
+        """
+        try:
+            snapshot = (AnalysisSnapshot
+                        .select(AnalysisSnapshot.parent_snapshot_id)
+                        .where(AnalysisSnapshot.snapshot_id == snapshot_id)
+                        .first())
+            return snapshot.parent_snapshot_id if snapshot else None
+        except Exception as e:
+            print(f"[Error] Failed to get parent for {snapshot_id}: {e}")
+            return None

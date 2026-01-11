@@ -48,6 +48,13 @@ class AnalysisSnapshot(BaseModel):
         null=False,
         help_text="Unique snapshot identifier (e.g., snap_<timestamp>_<4 gits random>)"
     )
+    # parent snapshot id
+    parent_snapshot_id = CharField(
+        max_length=128,
+        unique=False,
+        null=True,
+        help_text="Parent process's snapshot id"
+    )
 
     # Foreign Keys
     # Link to the raw dataset's business id (Root of the analysis)

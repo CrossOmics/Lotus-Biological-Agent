@@ -49,7 +49,7 @@ def test_qc_filter():
     payload = {
         "project_id": TEST_PROJECT_ID,
         "dataset_id": TEST_DATASET_ID,
-        "min_genes": 1000,  # Filter cells with < 200 genes
+        "min_genes": 1000,  # Filter cells with < 1000 genes
         "min_cells": 3,  # Filter genes present in < 3 cells
         "max_counts": 2500,  # Optional: Max counts
         "pct_mt_max": 2.0,  # Optional: Max 20% Mitochondrial content
