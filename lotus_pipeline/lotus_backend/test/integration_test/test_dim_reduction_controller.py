@@ -320,12 +320,48 @@ async def test_pca():
         max_diff = diff.max()
         mean_diff = diff.mean()
         
-        if max_diff < 1e-5:
+        # Machine epsilon for float64 is ~2.22e-16
+        # Differences < 1e-15 are essentially numerical precision errors, not real differences
+        if max_diff < 1e-15:
+            print(f"  ✓ Variance ratios match exactly (first {n_compare} components, max diff: {max_diff:.2e} ≈ machine precision)")
+        elif max_diff < 1e-5:
             print(f"  ✓ Variance ratios match (first {n_compare} components, max diff: {max_diff:.2e})")
         else:
             print(f"  ⚠ Variance ratios differ (max: {max_diff:.6f}, mean: {mean_diff:.6f})")
             if max_diff > 1e-3:
                 print(f"  ⚠ Warning: Significant difference in variance ratios")
+    
+    # 3. Compare PCA coordinates (X_pca) - should match exactly with same random_state
+    if 'X_pca' in adata_lotus.obsm and 'X_pca' in adata_scanpy.obsm:
+        # Load lotus PCA coordinates (both should have same number of cells)
+        pca_lotus = adata_lotus.obsm['X_pca']
+        pca_scanpy = adata_scanpy.obsm['X_pca']
+        
+        # Compare first few components (PCA coordinates may have sign differences, so compare absolute values)
+        # Or use correlation to verify similarity
+        from scipy.stats import pearsonr
+        n_cells_compare = min(1000, pca_lotus.shape[0], pca_scanpy.shape[0])  # Compare first 1K cells
+        n_comps_compare = min(5, pca_lotus.shape[1], pca_scanpy.shape[1])  # Compare first 5 components
+        
+        all_correlations = []
+        for comp_idx in range(n_comps_compare):
+            # Check both direct and sign-flipped correlations (PCA can have sign ambiguity)
+            corr1, _ = pearsonr(pca_lotus[:n_cells_compare, comp_idx], pca_scanpy[:n_cells_compare, comp_idx])
+            corr2, _ = pearsonr(-pca_lotus[:n_cells_compare, comp_idx], pca_scanpy[:n_cells_compare, comp_idx])
+            max_corr = max(abs(corr1), abs(corr2))
+            all_correlations.append(max_corr)
+        
+        min_corr = min(all_correlations)
+        mean_corr = np.mean(all_correlations)
+        
+        if min_corr > 0.99999:
+            print(f"  ✓ PCA coordinates match exactly (first {n_comps_compare} components, min correlation: {min_corr:.6f} = 1.0)")
+        elif min_corr > 0.999:
+            print(f"  ✓ PCA coordinates match (first {n_comps_compare} components, min correlation: {min_corr:.6f})")
+        else:
+            print(f"  ⚠ PCA coordinates differ (min correlation: {min_corr:.6f}, mean: {mean_corr:.6f})")
+            if min_corr < 0.99:
+                print(f"  ⚠ Warning: Low correlation in PCA coordinates")
     
     print(f"  ✓ PCA logic verified (subset comparison to avoid OOM)")
     
@@ -458,6 +494,51 @@ async def test_neighbors():
             print(f"  ✓ n_neighbors parameter matches: {n_neighbors_lotus}")
         else:
             print(f"  ⚠ n_neighbors difference: {n_neighbors_lotus} vs {n_neighbors_scanpy}")
+    
+    # 4. Compare connectivities matrix (should match exactly with same random_state)
+    if 'connectivities' in adata_lotus.obsp and 'connectivities' in adata_scanpy.obsp:
+        conn_lotus = adata_lotus.obsp['connectivities']
+        conn_scanpy = adata_scanpy.obsp['connectivities']
+        
+        # Convert to COO format for easier comparison
+        from scipy.sparse import coo_matrix
+        conn_lotus_coo = coo_matrix(conn_lotus)
+        conn_scanpy_coo = coo_matrix(conn_scanpy)
+        
+        # Check if shapes match
+        if conn_lotus_coo.shape == conn_scanpy_coo.shape:
+            # Compare non-zero values (should match exactly)
+            # Sort by row, col for comparison
+            lotus_sorted = sorted(zip(conn_lotus_coo.row, conn_lotus_coo.col, conn_lotus_coo.data))
+            scanpy_sorted = sorted(zip(conn_scanpy_coo.row, conn_scanpy_coo.col, conn_scanpy_coo.data))
+            
+            if len(lotus_sorted) == len(scanpy_sorted):
+                # Compare indices and values
+                lotus_rows, lotus_cols, lotus_vals = zip(*lotus_sorted)
+                scanpy_rows, scanpy_cols, scanpy_vals = zip(*scanpy_sorted)
+                
+                rows_match = np.array_equal(lotus_rows, scanpy_rows) and np.array_equal(lotus_cols, scanpy_cols)
+                if rows_match:
+                    vals_diff = np.abs(np.array(lotus_vals) - np.array(scanpy_vals))
+                    max_val_diff = vals_diff.max() if len(vals_diff) > 0 else 0
+                    
+                    # Machine epsilon for float64 is ~2.22e-16
+                    # Differences < 1e-15 are essentially numerical precision errors
+                    # Differences < 1e-6 are acceptable (may come from disk I/O or sparse matrix conversion)
+                    if max_val_diff < 1e-15:
+                        print(f"  ✓ Connectivities matrix matches exactly (max diff: {max_val_diff:.2e} ≈ machine precision)")
+                    elif max_val_diff < 1e-6:
+                        print(f"  ✓ Connectivities matrix matches (max diff: {max_val_diff:.2e}, acceptable precision loss from I/O)")
+                    elif max_val_diff < 1e-3:
+                        print(f"  ⚠ Connectivities values differ slightly (max diff: {max_val_diff:.6f}, may be from I/O precision)")
+                    else:
+                        print(f"  ⚠ Connectivities values differ significantly (max diff: {max_val_diff:.6f})")
+                else:
+                    print(f"  ⚠ Connectivities indices differ")
+            else:
+                print(f"  ⚠ Connectivities matrix size differs: {len(lotus_sorted)} vs {len(scanpy_sorted)}")
+        else:
+            print(f"  ⚠ Connectivities matrix shape differs: {conn_lotus_coo.shape} vs {conn_scanpy_coo.shape}")
     
     print(f"  ✓ Neighbors graph logic verified (subset comparison to avoid OOM)")
     

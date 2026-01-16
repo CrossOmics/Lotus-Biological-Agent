@@ -370,6 +370,38 @@ async def test_qc_filter():
         if diff_obs > adata_lotus.n_obs * 0.01:  # More than 1% difference
             print(f"  ⚠ Warning: Significant difference in cell count")
     
+    # Verify filtered cells/genes are the same (if shapes match)
+    if adata_lotus.shape == adata_scanpy.shape:
+        # Compare cell barcodes (should be identical if filtering logic is consistent)
+        lotus_cells = set(adata_lotus.obs_names)
+        scanpy_cells = set(adata_scanpy.obs_names)
+        cells_match = (lotus_cells == scanpy_cells)
+        
+        # Compare gene names
+        lotus_genes = set(adata_lotus.var_names)
+        scanpy_genes = set(adata_scanpy.var_names)
+        genes_match = (lotus_genes == scanpy_genes)
+        
+        if cells_match:
+            print(f"  ✓ Filtered cells match exactly!")
+        else:
+            cells_intersection = len(lotus_cells & scanpy_cells)
+            cells_union = len(lotus_cells | scanpy_cells)
+            overlap_ratio = cells_intersection / cells_union if cells_union > 0 else 0
+            print(f"  ⚠ Filtered cells differ (overlap: {overlap_ratio:.4f}, {cells_intersection}/{cells_union})")
+            if overlap_ratio < 0.99:
+                print(f"  ⚠ Warning: Low overlap in filtered cells")
+        
+        if genes_match:
+            print(f"  ✓ Filtered genes match exactly!")
+        else:
+            genes_intersection = len(lotus_genes & scanpy_genes)
+            genes_union = len(lotus_genes | scanpy_genes)
+            overlap_ratio = genes_intersection / genes_union if genes_union > 0 else 0
+            print(f"  ⚠ Filtered genes differ (overlap: {overlap_ratio:.4f}, {genes_intersection}/{genes_union})")
+            if overlap_ratio < 0.99:
+                print(f"  ⚠ Warning: Low overlap in filtered genes")
+    
     print("\n" + "=" * 60)
     print("✓ Test 2 Complete: QC Filter")
     print("=" * 60)
@@ -499,6 +531,29 @@ async def test_hvg():
         print(f"  ✓ Scanpy logic verified on subset: {n_hvg_scanpy_subset} HVGs")
     else:
         print(f"  ⚠ Scanpy subset result: {n_hvg_scanpy_subset} HVGs")
+    
+    # Compare which genes were selected as HVGs (on subset)
+    # Note: We compare on subset since lotus ran on full dataset, but we verify the logic
+    lotus_hvg_genes = set(adata_lotus.var_names)  # Lotus result only contains HVGs
+    scanpy_hvg_genes = set(adata_subset.var_names[adata_subset.var['highly_variable']])
+    
+    # Since lotus result is already subset to HVGs only, we compare overlap
+    # Get the source genes before HVG selection to compare
+    source_path = workspace_path_manager.resolve(filter_result.snapshot_path)
+    adata_source_check = sc.read_h5ad(source_path, backed='r')
+    source_genes = set(adata_source_check.var_names)
+    adata_source_check.file.close()
+    
+    # Compare: lotus HVGs should be a subset of source genes, and scanpy should select same genes
+    # Since we use subset for scanpy, we verify the genes selected match
+    scanpy_source_subset = set(adata_subset.var_names)  # All genes in subset
+    lotus_hvg_in_subset = lotus_hvg_genes & scanpy_source_subset
+    
+    if len(lotus_hvg_in_subset) > 0:
+        overlap_ratio = len(scanpy_hvg_genes & lotus_hvg_in_subset) / len(lotus_hvg_in_subset)
+        print(f"  ✓ HVG gene overlap on subset: {overlap_ratio:.4f} ({len(scanpy_hvg_genes & lotus_hvg_in_subset)}/{len(lotus_hvg_in_subset)} common)")
+        if overlap_ratio < 0.95:
+            print(f"  ⚠ Warning: Low overlap in selected HVG genes")
     
     print(f"  ✓ HVG selection logic verified (subset comparison to avoid OOM)")
     
