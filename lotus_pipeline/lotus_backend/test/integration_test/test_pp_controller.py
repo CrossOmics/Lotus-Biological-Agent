@@ -197,10 +197,12 @@ async def test_qc_calculation():
     adata_scanpy = storage.load_anndata(dataset.dataset_path)
     adata_scanpy.var['mt'] = adata_scanpy.var_names.str.startswith('MT-')
     adata_scanpy.var['ribo'] = adata_scanpy.var_names.str.startswith(('RPS', 'RPL'))
+    adata_scanpy.var['hb'] = adata_scanpy.var_names.str.contains('HB', regex=True, case=False)
     
+    # Use same qc_vars as lotus (['mt', 'ribo', 'hb']) - Reference: preprocessing_service.py line 290
     sc_pp.calculate_qc_metrics(
         adata_scanpy,
-        qc_vars=['mt', 'ribo'],
+        qc_vars=['mt', 'ribo', 'hb'],  # Match lotus: preprocessing_service.py line 290
         percent_top=None,
         log1p=False,
         inplace=True
